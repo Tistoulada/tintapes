@@ -84,66 +84,63 @@
     </div>
   </div>
 
-  <script>
-    function checkCode() {
-      const code = document.getElementById('code').value.trim().toUpperCase();
-      const codeMap = {
-        "TT-001": "code/TT-001.html"
-      };
-      if (codeMap[code]) {
-        window.location.href = codeMap[code];
-      } else {
-        alert("Invalid code.");
-      }
+ <script>
+  // --- Codes d'accès -> pages artistes ---
+  function checkCode() {
+    const code = document.getElementById('code').value.trim().toUpperCase();
+    const codeMap = {
+      "TT-KAL": "code/kalupto.html",
+      "TT-BST": "code/boost.html",
+      "TT-SWK": "code/superweekend.html",
+      "TT-BRI": "code/brie.html",
+      "TT-GST": "code/guest.html"   // remplace par le 5e groupe quand tu me le donnes
+    };
+    if (codeMap[code]) {
+      window.location.href = codeMap[code];
+    } else {
+      alert("Invalid code.");
     }
-  </script>
-  <script>
-  // éléments à animer
+  }
+
+  // --- Animation scroll : roues + bande ---
   const wL = document.getElementById('wL');
   const wR = document.getElementById('wR');
   const tapeL = document.getElementById('tapeL');
   const tapeR = document.getElementById('tapeR');
   const tapeGap = document.getElementById('tapeGap');
 
-  // paramètres d’animation
-  const wheelFrames = ['⟳','⟲','↺','↻']; // on boucle en continu
-  const TOTAL_TAPE = 18; // longueur totale visuelle de bande enroulée
-  let pos = TOTAL_TAPE - 2; // au départ: presque tout à gauche
+  const wheelFrames = ['⟳','⟲','↺','↻'];
+  const TOTAL_TAPE = 18; // longueur visuelle totale
+  let pos = TOTAL_TAPE - 2; // départ: quasi tout à gauche
   let wheel = 0;
+  let accum = 0;
 
   function render() {
-    // borne la pos
+    // borne pos
     if (pos < 0) pos = 0;
     if (pos > TOTAL_TAPE) pos = TOTAL_TAPE;
 
-    // bande : plus à gauche que à droite (et inversement)
+    // bande: gauche / droite + gap fixe au centre
     tapeL.textContent = '░'.repeat(pos);
     tapeR.textContent = '░'.repeat(TOTAL_TAPE - pos);
+    tapeGap.textContent = '  '; // 2 espaces
 
-    // petit "vide" au milieu pour simuler le passage
-    const GAP = 2; // espace visuel
-    tapeGap.textContent = ' '.repeat(GAP);
-
-    // roues qui tournent (boucle infinie)
-    wL.textContent = wheelFrames[ (wheel) % wheelFrames.length ];
-    wR.textContent = wheelFrames[ (wheel+2) % wheelFrames.length ];
+    // roues (boucle)
+    wL.textContent = wheelFrames[(wheel) % wheelFrames.length];
+    wR.textContent = wheelFrames[(wheel + 2) % wheelFrames.length];
   }
 
-  // gestion du scroll : bas = avance (vers la droite), haut = rembobine
-  let accum = 0;
+  // scroll: bas => avance, haut => rembobine
   window.addEventListener('wheel', (e) => {
-    // sens et sensibilité
-    const step = (e.deltaY > 0 ? 1 : -1);
     accum += Math.abs(e.deltaY);
-
-    // ralentir: il faut scroller davantage pour bouger
-    if (accum > 40) {           // ⇦ augmente si tu veux encore plus d’amplitude
-      pos += step;              // décale la bande
-      wheel = (wheel + step + 1000) % 1000; // évite les nombres négatifs
+    if (accum > 40) {        // ↑ augmente pour demander plus de scroll
+      const step = e.deltaY > 0 ? 1 : -1;
+      pos += step;
+      wheel = (wheel + step + 1000) % 1000;
       accum = 0;
       render();
     }
-  }, { passive:true });
+  }, { passive: true });
 
   render();
 </script>
