@@ -6,7 +6,21 @@
   <title>TinTapes</title>
   <style>
     :root{ --fs: 2.8vw; --lh: 1.08; }
-    @media (max-width: 700px){ :root{ --fs: 6.2vw; --lh: 1.04; } }
+  @media (max-width: 700px){
+  :root{
+    --fs: 5.0vw;   /* cassette plus petite (avant: 6.2vw) */
+    --lh: 1.04;
+  }
+  .code-input{
+    font-size: 3.2vw;   /* input + petit */
+    padding: .18rem .32rem;
+    width: 9ch;
+  }
+  .enter-btn{
+    font-size: 3.2vw;   /* bouton + petit */
+    padding: .18rem .4rem;
+  }
+}
 
     html,body{
       margin:0; min-height:100%;
@@ -82,16 +96,22 @@
     const slot = document.getElementById('slot');
 
     function placeInput(){
-      const r = slot.getBoundingClientRect();   // underscores (absolu écran)
-      const s = stage.getBoundingClientRect();  // conteneur (absolu écran)
-      // convertir en coordonnées relatives au conteneur
-      wrap.style.left  = (r.left - s.left) + 'px';
-      wrap.style.top   = (r.top  - s.top)  + 'px';
-      wrap.style.width = r.width + 'px';
-    }
-    window.addEventListener('load', placeInput);
-    window.addEventListener('resize', placeInput);
-    window.addEventListener('orientationchange', placeInput);
+      const stage = document.getElementById('stage');
+
+function placeInput(){
+  const r = slot.getBoundingClientRect();   // underscores (viewport)
+  const s = stage.getBoundingClientRect();  // conteneur (viewport)
+
+  // micro-corrections
+  const isMobile = window.matchMedia('(max-width: 700px)').matches;
+  const offsetX = isMobile ? 0 : 6;   // pousse un peu à droite sur desktop
+  const offsetY = 0;
+
+  // position relative au conteneur
+  wrap.style.left  = (r.left - s.left + offsetX) + 'px';
+  wrap.style.top   = (r.top  - s.top  + offsetY) + 'px';
+  wrap.style.width = (r.width - (isMobile ? 0 : 4)) + 'px'; // évite de toucher les crochets
+}
 
     /* === Animation scroll (roues + bande) === */
     const wL = document.getElementById('wL');
