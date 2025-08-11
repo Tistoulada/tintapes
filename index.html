@@ -5,38 +5,62 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TinTapes</title>
   <style>
-    :root{ --fs: 2.8vw; --lh: 1.08; }
-    @media (max-width: 700px){ :root{ --fs: 5vw; --lh: 1.04; } } /* cassette réduite mobile */
-
-    html,body{
-      margin:0; min-height:100%;
-      background:#000; color:#fff;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
-      display:flex; align-items:center; justify-content:center;
+    :root {
+      --fs: 2.8vw; 
+      --lh: 1.08; 
     }
-    .stage{ position:relative; }
-    pre#art{
-      margin:0; white-space:pre; text-align:center;
-      font-size: var(--fs); line-height: var(--lh);
+    @media (max-width: 700px) {
+      :root {
+        --fs: 4.8vw; 
+        --lh: 1.04; 
+      }
     }
 
-    /* Bloc input+btn centré */
-    .code-wrap{
-      position:absolute;
-      display:flex; gap:.5rem;
-      pointer-events:auto;
+    html, body {
+      margin: 0; 
+      min-height: 100%;
+      background: #000; 
+      color: #fff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
     }
-    .code-input{
-      background:#111; color:#fff; border:1px solid #444;
-      padding:.3rem .5rem; text-align:center;
-      font: inherit;
+    .stage { 
+      position: relative; 
+    }
+    pre#art {
+      margin: 0; 
+      white-space: pre; 
+      text-align: center;
+      font-size: var(--fs); 
+      line-height: var(--lh);
+    }
+
+    .code-wrap {
+      position: absolute; 
+      display: flex; 
+      align-items: center; 
+      gap: .6rem;
+      pointer-events: auto;
+    }
+    .code-input {
+      background: #111; 
+      color: #fff; 
+      border: 1px solid #444;
+      padding: .32rem .5rem; 
+      text-align: center; 
+      width: 10ch;
+      font: inherit; 
       font-size: clamp(14px,1.1rem,4.2vw);
-      width: 8ch; /* taille fixe, plus petite */
     }
-    .enter-btn{
-      background:#222; color:#fff; border:1px solid #444;
-      padding:.3rem .6rem; cursor:pointer;
-      font: inherit;
+    .enter-btn {
+      background: #222; 
+      color: #fff; 
+      border: 1px solid #444;
+      padding: .32rem .6rem; 
+      cursor: pointer;
+      font: inherit; 
       font-size: clamp(14px,1.05rem,4.2vw);
     }
   </style>
@@ -57,52 +81,7 @@
 └────────────────────────────┘
 </pre>
 
-    <!-- bloc centré -->
     <div class="code-wrap" id="codeWrap">
-      <input id="code" class="code-input" placeholder="TT-KAL" autocomplete="off" />
-      <button id="enterBtn" class="enter-btn">ENTER</button>
-    </div>
-  </div>
+      <input id="code" class="code-input" placeholder=
 
-  <script>
-    /* === Redirections codes === */
-    function checkCode(){
-      const code = document.getElementById('code').value.trim().toUpperCase();
-      const map = {
-        "TT-KAL": "code/kalupto.html",
-        "TT-BST": "code/boost.html",
-        "TT-SWK": "code/superweekend.html",
-        "TT-BRI": "code/brie.html",
-        "TT-GST": "code/guest.html"
-      };
-      if(map[code]) location.href = map[code];
-      else alert("Invalid code.");
-    }
-    document.getElementById('enterBtn').addEventListener('click', checkCode);
-    document.getElementById('code').addEventListener('keydown', e=>{ if(e.key==='Enter') checkCode(); });
-
-    /* === Placement centré dans le rectangle === */
-    function placeControls(){
-      const stage = document.getElementById('stage');
-      const art = document.getElementById('art').getBoundingClientRect();
-      const wrap = document.getElementById('codeWrap');
-      const rectWidth = art.width * 0.35; // largeur = 35% du rectangle blanc
-      wrap.style.width = rectWidth + 'px';
-      wrap.style.left = (art.width/2 - rectWidth/2) + 'px';
-      wrap.style.top = (art.height * 0.78) + 'px'; // 78% de la hauteur du rectangle
-    }
-    window.addEventListener('load', placeControls);
-    window.addEventListener('resize', placeControls);
-    window.addEventListener('orientationchange', placeControls);
-
-    /* === Animation scroll (roues + bande) === */
-    const wL = document.getElementById('wL');
-    const wR = document.getElementById('wR');
-    const tapeL = document.getElementById('tapeL');
-    const tapeR = document.getElementById('tapeR');
-    const tapeGap = document.getElementById('tapeGap');
-
-    const wheelFrames = ['⟳','⟲','↺','↻'];
-    const TOTAL_TAPE = 18;
-    let pos = TO
 
