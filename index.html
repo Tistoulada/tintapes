@@ -1,70 +1,51 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TinTapes</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     :root{
-  --fs: 2.8vw;     /* scale of the cassette */
-  --lh: 1.08;      /* line-height: lower = more rectangular */
-  --input-top: 60%;/* ← était 69%, on remonte */
-}
-@media (max-width: 700px){
-  :root{ --fs: 5.2vw; --lh: 1.02; --input-top: 65%; }
-}
-    body {
-      background: #000;
-      color: #fff;
-      font-family: monospace;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
+      --fs: 2.8vw;     /* taille de la cassette sur desktop */
+      --lh: 1.08;      /* plus petit = plus plat (rectangulaire) */
     }
-    .cassette {
-      white-space: pre;
-      font-size: var(--fs);
+    @media (max-width: 700px){
+      :root{ --fs: 6.2vw; --lh: 1.04; }
+    }
+    html,body{
+      margin:0; min-height:100%;
+      background:#000; color:#fff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .cassette{
+      position:relative;
+      white-space:pre;
+      text-align:center;
       line-height: var(--lh);
-      text-align: center;
-      position: relative;
+      font-size: var(--fs);
     }
-    .code-input {
-      position: absolute;
-      top: var(--input-top); /* raise the input above the white line */
-      left: 50%;
-      transform: translate(-50%, -50%);
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      pointer-events: auto;
+    /* Champ code + bouton (positionnés dynamiquement par JS) */
+    .code-wrap{
+      position:absolute; display:flex; align-items:center; gap:.6rem;
+      pointer-events:auto;
     }
-    input {
-      background: #111;
-      color: #fff;
-      border: 1px solid #444;
-      padding: 0.35rem 0.5rem;
-      font-family: monospace;
-      font-size: 1.2rem;
-      width: 11ch;
-      text-align: center;
+    .code-input{
+      background:#111; color:#fff; border:1px solid #444;
+      padding:.32rem .5rem; text-align:center; width:10ch;
+      font-family:inherit; font-size:clamp(14px, 1.2rem, 4.2vw);
     }
-    button {
-      background: #222;
-      color: #fff;
-      border: 1px solid #444;
-      padding: 0.35rem 0.7rem;
-      cursor: pointer;
-      font-size: 1.1rem;
+    .enter-btn{
+      background:#222; color:#fff; border:1px solid #444;
+      padding:.32rem .6rem; cursor:pointer;
+      font-family:inherit; font-size:clamp(14px, 1.1rem, 4.2vw);
     }
   </style>
 </head>
 <body>
-  <div class="cassette">
-<pre id="cassetteArt" style="line-height:1.08;font-size:2.8vw;white-space:pre;text-align:center;">
+
+  <div class="cassette" id="cassetteBox">
+<pre id="art">
 ┌────────────────────────────┐
 │                            │
 │         TIN TAPES          │
@@ -74,76 +55,97 @@
 │                            │
 │    4 TRACKS // ONE TAKE    │
 │         INSERT CODE        │
-│      [______________]      │
+│      <span id="slot-start">[</span><span id="slot">______________</span><span id="slot-end">]</span>      │
 └────────────────────────────┘
 </pre>
 
-    <div class="code-input">
-      <input type="text" id="code" placeholder="TT-001">
-      <button onclick="checkCode()">ENTER</button>
+    <!-- Champ code + bouton, placés automatiquement sur les "__________" -->
+    <div class="code-wrap" id="codeWrap" aria-hidden="false">
+      <input id="code" class="code-input" placeholder="TT-KAL" autocomplete="off" />
+      <button id="enterBtn" class="enter-btn">ENTER</button>
     </div>
   </div>
 
- <script>
-  // --- Codes d'accès -> pages artistes ---
-  function checkCode() {
-    const code = document.getElementById('code').value.trim().toUpperCase();
-    const codeMap = {
-      "TT-KAL": "code/kalupto.html",
-      "TT-BST": "code/boost.html",
-      "TT-SWK": "code/superweekend.html",
-      "TT-BRI": "code/brie.html",
-      "TT-GST": "code/guest.html"   // remplace par le 5e groupe quand tu me le donnes
-    };
-    if (codeMap[code]) {
-      window.location.href = codeMap[code];
-    } else {
-      alert("Invalid code.");
+  <script>
+    /* ---------- Redirections par code ---------- */
+    function checkCode(){
+      const code = document.getElementById('code').value.trim().toUpperCase();
+      const codeMap = {
+        "TT-KAL": "code/kalupto.html",
+        "TT-BST": "code/boost.html",
+        "TT-SWK": "code/superweekend.html",
+        "TT-BRI": "code/brie.html",
+        "TT-GST": "code/guest.html" // remplace quand tu as le 5e nom
+      };
+      if(codeMap[code]) location.href = codeMap[code];
+      else alert("Invalid code.");
     }
-  }
+    document.getElementById('enterBtn').addEventListener('click', checkCode);
+    document.getElementById('code').addEventListener('keydown', e=>{ if(e.key==='Enter') checkCode(); });
 
-  // --- Animation scroll : roues + bande ---
-  const wL = document.getElementById('wL');
-  const wR = document.getElementById('wR');
-  const tapeL = document.getElementById('tapeL');
-  const tapeR = document.getElementById('tapeR');
-  const tapeGap = document.getElementById('tapeGap');
+    /* ---------- Placement automatique du champ sur les crochets ---------- */
+    const slotEl = document.getElementById('slot');
+    const slotStart = document.getElementById('slot-start');
+    const wrap = document.getElementById('codeWrap');
+    const box = document.getElementById('cassetteBox');
 
-  const wheelFrames = ['⟳','⟲','↺','↻'];
-  const TOTAL_TAPE = 18; // longueur visuelle totale
-  let pos = TOTAL_TAPE - 2; // départ: quasi tout à gauche
-  let wheel = 0;
-  let accum = 0;
-
-  function render() {
-    // borne pos
-    if (pos < 0) pos = 0;
-    if (pos > TOTAL_TAPE) pos = TOTAL_TAPE;
-
-    // bande: gauche / droite + gap fixe au centre
-    tapeL.textContent = '░'.repeat(pos);
-    tapeR.textContent = '░'.repeat(TOTAL_TAPE - pos);
-    tapeGap.textContent = '  '; // 2 espaces
-
-    // roues (boucle)
-    wL.textContent = wheelFrames[(wheel) % wheelFrames.length];
-    wR.textContent = wheelFrames[(wheel + 2) % wheelFrames.length];
-  }
-
-  // scroll: bas => avance, haut => rembobine
-  window.addEventListener('wheel', (e) => {
-    accum += Math.abs(e.deltaY);
-    if (accum > 40) {        // ↑ augmente pour demander plus de scroll
-      const step = e.deltaY > 0 ? 1 : -1;
-      pos += step;
-      wheel = (wheel + step + 1000) % 1000;
-      accum = 0;
-      render();
+    function placeInput(){
+      // mesure relative à la page
+      const r = slotEl.getBoundingClientRect();
+      const b = box.getBoundingClientRect();
+      // positionner le wrap sur les underscores
+      wrap.style.left = (r.left) + 'px';
+      wrap.style.top  = (r.top) + 'px';
+      wrap.style.width = (r.width) + 'px';
+      // dimensionner l'input à la largeur des underscores
+      const input = document.getElementById('code');
+      input.style.width = Math.max(8, Math.floor(r.width / 9)) + 'ch'; // ajuste automatiquement
     }
-  }, { passive: true });
+    window.addEventListener('load', placeInput);
+    window.addEventListener('resize', placeInput);
 
-  render();
-</script>
+    /* ---------- Animation scroll : roues + bande ---------- */
+    const wL = document.getElementById('wL');
+    const wR = document.getElementById('wR');
+    const tapeL = document.getElementById('tapeL');
+    const tapeR = document.getElementById('tapeR');
+    const tapeGap = document.getElementById('tapeGap');
 
+    const wheelFrames = ['⟳','⟲','↺','↻'];
+    const TOTAL_TAPE = 18;     // longueur visuelle de bande
+    let pos = TOTAL_TAPE - 2;  // départ: bande surtout à gauche
+    let wheel = 0;
+    let accum = 0;
+
+    function render(){
+      // bornes
+      if(pos < 0) pos = 0;
+      if(pos > TOTAL_TAPE) pos = TOTAL_TAPE;
+      // bande
+      tapeL.textContent = '░'.repeat(pos);
+      tapeR.textContent = '░'.repeat(TOTAL_TAPE - pos);
+      tapeGap.textContent = '  ';
+      // roues
+      wL.textContent = wheelFrames[(wheel) % wheelFrames.length];
+      wR.textContent = wheelFrames[(wheel+2) % wheelFrames.length];
+      // recaler l'input après zoom/resize éventuel
+      placeInput();
+    }
+
+    // défilement : bas = avance, haut = rembobine (amplitude réglable via threshold)
+    window.addEventListener('wheel', (e)=>{
+      accum += Math.abs(e.deltaY);
+      const threshold = 50; // ↑ augmente pour demander plus de scroll
+      if(accum > threshold){
+        const step = e.deltaY > 0 ? 1 : -1;
+        pos += step;
+        wheel = (wheel + step + 1000) % 1000;
+        accum = 0;
+        render();
+      }
+    }, {passive:true});
+
+    render();
+  </script>
 </body>
 </html>
