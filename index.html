@@ -6,7 +6,7 @@
   <title>TinTapes</title>
   <style>
     :root{ --fs: 2.8vw; --lh: 1.08; }
-    @media (max-width: 700px){ :root{ --fs: 5.0vw; --lh: 1.04; } } /* cassette + petite sur mobile */
+    @media (max-width: 700px){ :root{ --fs: 5vw; --lh: 1.04; } } /* cassette réduite mobile */
 
     html,body{
       margin:0; min-height:100%;
@@ -19,20 +19,24 @@
       margin:0; white-space:pre; text-align:center;
       font-size: var(--fs); line-height: var(--lh);
     }
-    /* éléments positionnés AU PIXEL par JS */
-    .code-input, .enter-btn{
-      position:absolute; pointer-events:auto;
-      font: inherit;
+
+    /* Bloc input+btn centré */
+    .code-wrap{
+      position:absolute;
+      display:flex; gap:.5rem;
+      pointer-events:auto;
     }
     .code-input{
       background:#111; color:#fff; border:1px solid #444;
-      padding:.32rem .5rem; text-align:center;
+      padding:.3rem .5rem; text-align:center;
+      font: inherit;
       font-size: clamp(14px,1.1rem,4.2vw);
-      width: 10ch; /* sera surchargé par JS pour remplir exactement les underscores */
+      width: 8ch; /* taille fixe, plus petite */
     }
     .enter-btn{
       background:#222; color:#fff; border:1px solid #444;
-      padding:.32rem .6rem; cursor:pointer;
+      padding:.3rem .6rem; cursor:pointer;
+      font: inherit;
       font-size: clamp(14px,1.05rem,4.2vw);
     }
   </style>
@@ -49,13 +53,15 @@
 │                            │
 │    4 TRACKS // ONE TAKE    │
 │         INSERT CODE        │
-│      <span id="slot-start">[</span><span id="slot">______________</span><span id="slot-end">]</span>      │
+│      [______________]      │
 └────────────────────────────┘
 </pre>
 
-    <!-- input et bouton séparés (alignés chacun sur leur ancre) -->
-    <input id="code" class="code-input" placeholder="TT-KAL" autocomplete="off" />
-    <button id="enterBtn" class="enter-btn">ENTER</button>
+    <!-- bloc centré -->
+    <div class="code-wrap" id="codeWrap">
+      <input id="code" class="code-input" placeholder="TT-KAL" autocomplete="off" />
+      <button id="enterBtn" class="enter-btn">ENTER</button>
+    </div>
   </div>
 
   <script>
@@ -75,25 +81,15 @@
     document.getElementById('enterBtn').addEventListener('click', checkCode);
     document.getElementById('code').addEventListener('keydown', e=>{ if(e.key==='Enter') checkCode(); });
 
-    /* === Placement AUTO : input sur "slot", bouton à droite de "]" === */
-    const stage = document.getElementById('stage');
-    const slot = document.getElementById('slot');
-    const slotEnd = document.getElementById('slot-end');
-    const inputEl = document.getElementById('code');
-    const btnEl = document.getElementById('enterBtn');
-
+    /* === Placement centré dans le rectangle === */
     function placeControls(){
-      const s = stage.getBoundingClientRect();
-      const rSlot = slot.getBoundingClientRect();
-      const rEnd  = slotEnd.getBoundingClientRect();
-
-      // position relative au conteneur
-      inputEl.style.left = (rSlot.left - s.left) + 'px';
-      inputEl.style.top  = (rSlot.top  - s.top ) + 'px';
-      inputEl.style.width = rSlot.width + 'px';      // exactement la largeur des underscores
-
-      btnEl.style.left = (rEnd.right - s.left + 8) + 'px'; // 8px d’air après le ]
-      btnEl.style.top  = (rSlot.top   - s.top ) + 'px';
+      const stage = document.getElementById('stage');
+      const art = document.getElementById('art').getBoundingClientRect();
+      const wrap = document.getElementById('codeWrap');
+      const rectWidth = art.width * 0.35; // largeur = 35% du rectangle blanc
+      wrap.style.width = rectWidth + 'px';
+      wrap.style.left = (art.width/2 - rectWidth/2) + 'px';
+      wrap.style.top = (art.height * 0.78) + 'px'; // 78% de la hauteur du rectangle
     }
     window.addEventListener('load', placeControls);
     window.addEventListener('resize', placeControls);
@@ -108,35 +104,5 @@
 
     const wheelFrames = ['⟳','⟲','↺','↻'];
     const TOTAL_TAPE = 18;
-    let pos = TOTAL_TAPE - 2;  // départ quasi tout à gauche
-    let wheel = 0, accum = 0;
-
-    function render(){
-      if(pos<0) pos=0; if(pos>TOTAL_TAPE) pos=TOTAL_TAPE;
-      tapeL.textContent = '░'.repeat(pos);
-      tapeR.textContent = '░'.repeat(TOTAL_TAPE - pos);
-      tapeGap.textContent = '  ';
-      wL.textContent = wheelFrames[(wheel) % wheelFrames.length];
-      wR.textContent = wheelFrames[(wheel+2) % wheelFrames.length];
-
-      // re-caler au cas où la taille visuelle a bougé
-      placeControls();
-    }
-
-    window.addEventListener('wheel', e=>{
-      accum += Math.abs(e.deltaY);
-      const threshold = 50; // ↑ augmente si tu veux plus d'inertie
-      if(accum > threshold){
-        const step = e.deltaY > 0 ? 1 : -1;
-        pos += step;
-        wheel = (wheel + step + 1000) % 1000;
-        accum = 0;
-        render();
-      }
-    }, {passive:true});
-
-    render();
-  </script>
-</body>
-</html>
+    let pos = TO
 
