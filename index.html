@@ -64,17 +64,19 @@
 </head>
 <body>
   <div class="cassette">
+<pre id="cassetteArt" style="line-height:1.08;font-size:2.8vw;white-space:pre;text-align:center;">
 ┌────────────────────────────┐
 │                            │
 │         TIN TAPES          │
 │      ╔════════════╗        │
-│  ⟳ ║ ░░         ░░ ║ ⟳  │
+│  <span id="wL">⟳</span> ║ <span id="tapeL">░░░░░░░░░░░░</span><span id="tapeGap">  </span><span id="tapeR">░░</span> ║ <span id="wR">⟳</span>  │
 │      ╚════════════╝        │
 │                            │
 │    4 TRACKS // ONE TAKE    │
 │         INSERT CODE        │
 │      [______________]      │
 └────────────────────────────┘
+</pre>
 
     <div class="code-input">
       <input type="text" id="code" placeholder="TT-001">
@@ -95,5 +97,56 @@
       }
     }
   </script>
+  <script>
+  // éléments à animer
+  const wL = document.getElementById('wL');
+  const wR = document.getElementById('wR');
+  const tapeL = document.getElementById('tapeL');
+  const tapeR = document.getElementById('tapeR');
+  const tapeGap = document.getElementById('tapeGap');
+
+  // paramètres d’animation
+  const wheelFrames = ['⟳','⟲','↺','↻']; // on boucle en continu
+  const TOTAL_TAPE = 18; // longueur totale visuelle de bande enroulée
+  let pos = TOTAL_TAPE - 2; // au départ: presque tout à gauche
+  let wheel = 0;
+
+  function render() {
+    // borne la pos
+    if (pos < 0) pos = 0;
+    if (pos > TOTAL_TAPE) pos = TOTAL_TAPE;
+
+    // bande : plus à gauche que à droite (et inversement)
+    tapeL.textContent = '░'.repeat(pos);
+    tapeR.textContent = '░'.repeat(TOTAL_TAPE - pos);
+
+    // petit "vide" au milieu pour simuler le passage
+    const GAP = 2; // espace visuel
+    tapeGap.textContent = ' '.repeat(GAP);
+
+    // roues qui tournent (boucle infinie)
+    wL.textContent = wheelFrames[ (wheel) % wheelFrames.length ];
+    wR.textContent = wheelFrames[ (wheel+2) % wheelFrames.length ];
+  }
+
+  // gestion du scroll : bas = avance (vers la droite), haut = rembobine
+  let accum = 0;
+  window.addEventListener('wheel', (e) => {
+    // sens et sensibilité
+    const step = (e.deltaY > 0 ? 1 : -1);
+    accum += Math.abs(e.deltaY);
+
+    // ralentir: il faut scroller davantage pour bouger
+    if (accum > 40) {           // ⇦ augmente si tu veux encore plus d’amplitude
+      pos += step;              // décale la bande
+      wheel = (wheel + step + 1000) % 1000; // évite les nombres négatifs
+      accum = 0;
+      render();
+    }
+  }, { passive:true });
+
+  render();
+</script>
+
 </body>
 </html>
