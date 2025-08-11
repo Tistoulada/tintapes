@@ -6,26 +6,12 @@
   <title>TinTapes</title>
   <style>
     :root{ --fs: 2.8vw; --lh: 1.08; }
-  @media (max-width: 700px){
-  :root{
-    --fs: 5.0vw;   /* cassette plus petite (avant: 6.2vw) */
-    --lh: 1.04;
-  }
-  .code-input{
-    font-size: 3.2vw;   /* input + petit */
-    padding: .18rem .32rem;
-    width: 9ch;
-  }
-  .enter-btn{
-    font-size: 3.2vw;   /* bouton + petit */
-    padding: .18rem .4rem;
-  }
-}
+    @media (max-width: 700px){ :root{ --fs: 5.0vw; --lh: 1.04; } } /* cassette + petite sur mobile */
 
     html,body{
       margin:0; min-height:100%;
       background:#000; color:#fff;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
       display:flex; align-items:center; justify-content:center;
     }
     .stage{ position:relative; }
@@ -33,20 +19,21 @@
       margin:0; white-space:pre; text-align:center;
       font-size: var(--fs); line-height: var(--lh);
     }
-    /* input + bouton : positionnés au pixel par JS sur les underscores */
-    .code-wrap{
-      position:absolute; display:flex; align-items:center; gap:.6rem;
-      pointer-events:auto;
+    /* éléments positionnés AU PIXEL par JS */
+    .code-input, .enter-btn{
+      position:absolute; pointer-events:auto;
+      font: inherit;
     }
     .code-input{
       background:#111; color:#fff; border:1px solid #444;
-      padding:.32rem .5rem; text-align:center; width:10ch;
-      font: inherit; font-size: clamp(14px,1.1rem,4.2vw);
+      padding:.32rem .5rem; text-align:center;
+      font-size: clamp(14px,1.1rem,4.2vw);
+      width: 10ch; /* sera surchargé par JS pour remplir exactement les underscores */
     }
     .enter-btn{
       background:#222; color:#fff; border:1px solid #444;
       padding:.32rem .6rem; cursor:pointer;
-      font: inherit; font-size: clamp(14px,1.05rem,4.2vw);
+      font-size: clamp(14px,1.05rem,4.2vw);
     }
   </style>
 </head>
@@ -66,11 +53,9 @@
 └────────────────────────────┘
 </pre>
 
-    <!-- Input calé automatiquement sur les "______________" -->
-    <div class="code-wrap" id="codeWrap">
-      <input id="code" class="code-input" placeholder="TT-KAL" autocomplete="off" />
-      <button id="enterBtn" class="enter-btn">ENTER</button>
-    </div>
+    <!-- input et bouton séparés (alignés chacun sur leur ancre) -->
+    <input id="code" class="code-input" placeholder="TT-KAL" autocomplete="off" />
+    <button id="enterBtn" class="enter-btn">ENTER</button>
   </div>
 
   <script>
@@ -82,7 +67,7 @@
         "TT-BST": "code/boost.html",
         "TT-SWK": "code/superweekend.html",
         "TT-BRI": "code/brie.html",
-        "TT-GST": "code/guest.html" // remplace quand tu as le 5e nom
+        "TT-GST": "code/guest.html"
       };
       if(map[code]) location.href = map[code];
       else alert("Invalid code.");
@@ -90,28 +75,29 @@
     document.getElementById('enterBtn').addEventListener('click', checkCode);
     document.getElementById('code').addEventListener('keydown', e=>{ if(e.key==='Enter') checkCode(); });
 
-    /* === Placement AUTO relatif au conteneur === */
+    /* === Placement AUTO : input sur "slot", bouton à droite de "]" === */
     const stage = document.getElementById('stage');
-    const wrap = document.getElementById('codeWrap');
     const slot = document.getElementById('slot');
+    const slotEnd = document.getElementById('slot-end');
+    const inputEl = document.getElementById('code');
+    const btnEl = document.getElementById('enterBtn');
 
-    function placeInput(){
-      const stage = document.getElementById('stage');
+    function placeControls(){
+      const s = stage.getBoundingClientRect();
+      const rSlot = slot.getBoundingClientRect();
+      const rEnd  = slotEnd.getBoundingClientRect();
 
-function placeInput(){
-  const r = slot.getBoundingClientRect();   // underscores (viewport)
-  const s = stage.getBoundingClientRect();  // conteneur (viewport)
+      // position relative au conteneur
+      inputEl.style.left = (rSlot.left - s.left) + 'px';
+      inputEl.style.top  = (rSlot.top  - s.top ) + 'px';
+      inputEl.style.width = rSlot.width + 'px';      // exactement la largeur des underscores
 
-  // micro-corrections
-  const isMobile = window.matchMedia('(max-width: 700px)').matches;
-  const offsetX = isMobile ? 0 : 6;   // pousse un peu à droite sur desktop
-  const offsetY = 0;
-
-  // position relative au conteneur
-  wrap.style.left  = (r.left - s.left + offsetX) + 'px';
-  wrap.style.top   = (r.top  - s.top  + offsetY) + 'px';
-  wrap.style.width = (r.width - (isMobile ? 0 : 4)) + 'px'; // évite de toucher les crochets
-}
+      btnEl.style.left = (rEnd.right - s.left + 8) + 'px'; // 8px d’air après le ]
+      btnEl.style.top  = (rSlot.top   - s.top ) + 'px';
+    }
+    window.addEventListener('load', placeControls);
+    window.addEventListener('resize', placeControls);
+    window.addEventListener('orientationchange', placeControls);
 
     /* === Animation scroll (roues + bande) === */
     const wL = document.getElementById('wL');
@@ -121,8 +107,8 @@ function placeInput(){
     const tapeGap = document.getElementById('tapeGap');
 
     const wheelFrames = ['⟳','⟲','↺','↻'];
-    const TOTAL_TAPE = 18;    // longueur visuelle
-    let pos = TOTAL_TAPE - 2; // départ : surtout à gauche
+    const TOTAL_TAPE = 18;
+    let pos = TOTAL_TAPE - 2;  // départ quasi tout à gauche
     let wheel = 0, accum = 0;
 
     function render(){
@@ -132,13 +118,14 @@ function placeInput(){
       tapeGap.textContent = '  ';
       wL.textContent = wheelFrames[(wheel) % wheelFrames.length];
       wR.textContent = wheelFrames[(wheel+2) % wheelFrames.length];
-      // si la taille/zoom change, on recale
-      placeInput();
+
+      // re-caler au cas où la taille visuelle a bougé
+      placeControls();
     }
 
     window.addEventListener('wheel', e=>{
       accum += Math.abs(e.deltaY);
-      const threshold = 50; // ↑ augmente pour demander plus de scroll
+      const threshold = 50; // ↑ augmente si tu veux plus d'inertie
       if(accum > threshold){
         const step = e.deltaY > 0 ? 1 : -1;
         pos += step;
