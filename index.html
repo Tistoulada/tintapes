@@ -2,30 +2,25 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TinTapes</title>
   <style>
-    :root{
-      --fs: 2.8vw;     /* taille de la cassette sur desktop */
-      --lh: 1.08;      /* plus petit = plus plat (rectangulaire) */
-    }
-    @media (max-width: 700px){
-      :root{ --fs: 6.2vw; --lh: 1.04; }
-    }
+    :root{ --fs: 2.8vw; --lh: 1.08; }
+    @media (max-width: 700px){ :root{ --fs: 6.2vw; --lh: 1.04; } }
+
     html,body{
       margin:0; min-height:100%;
       background:#000; color:#fff;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       display:flex; align-items:center; justify-content:center;
     }
-    .cassette{
-      position:relative;
-      white-space:pre;
-      text-align:center;
-      line-height: var(--lh);
-      font-size: var(--fs);
+    .stage{ position:relative; }
+    pre#art{
+      margin:0; white-space:pre; text-align:center;
+      font-size: var(--fs); line-height: var(--lh);
     }
-    /* Champ code + bouton (positionnés dynamiquement par JS) */
+
+    /* Le conteneur input+bouton sera positionné AU PIXEL sur les underscores */
     .code-wrap{
       position:absolute; display:flex; align-items:center; gap:.6rem;
       pointer-events:auto;
@@ -33,18 +28,17 @@
     .code-input{
       background:#111; color:#fff; border:1px solid #444;
       padding:.32rem .5rem; text-align:center; width:10ch;
-      font-family:inherit; font-size:clamp(14px, 1.2rem, 4.2vw);
+      font: inherit; font-size: clamp(14px,1.1rem,4.2vw);
     }
     .enter-btn{
       background:#222; color:#fff; border:1px solid #444;
       padding:.32rem .6rem; cursor:pointer;
-      font-family:inherit; font-size:clamp(14px, 1.1rem, 4.2vw);
+      font: inherit; font-size: clamp(14px,1.05rem,4.2vw);
     }
   </style>
 </head>
 <body>
-
-  <div class="cassette" id="cassetteBox">
+  <div class="stage" id="stage">
 <pre id="art">
 ┌────────────────────────────┐
 │                            │
@@ -59,52 +53,46 @@
 └────────────────────────────┘
 </pre>
 
-    <!-- Champ code + bouton, placés automatiquement sur les "__________" -->
-    <div class="code-wrap" id="codeWrap" aria-hidden="false">
+    <!-- Input calé automatiquement sur les underscores -->
+    <div class="code-wrap" id="codeWrap">
       <input id="code" class="code-input" placeholder="TT-KAL" autocomplete="off" />
       <button id="enterBtn" class="enter-btn">ENTER</button>
     </div>
   </div>
 
   <script>
-    /* ---------- Redirections par code ---------- */
+    /* === Redirections codes === */
     function checkCode(){
       const code = document.getElementById('code').value.trim().toUpperCase();
-      const codeMap = {
+      const map = {
         "TT-KAL": "code/kalupto.html",
         "TT-BST": "code/boost.html",
         "TT-SWK": "code/superweekend.html",
         "TT-BRI": "code/brie.html",
-        "TT-GST": "code/guest.html" // remplace quand tu as le 5e nom
+        "TT-GST": "code/guest.html"
       };
-      if(codeMap[code]) location.href = codeMap[code];
-      else alert("Invalid code.");
+      if(map[code]) location.href = map[code]; else alert("Invalid code.");
     }
     document.getElementById('enterBtn').addEventListener('click', checkCode);
     document.getElementById('code').addEventListener('keydown', e=>{ if(e.key==='Enter') checkCode(); });
 
-    /* ---------- Placement automatique du champ sur les crochets ---------- */
-    const slotEl = document.getElementById('slot');
-    const slotStart = document.getElementById('slot-start');
+    /* === Placement AUTO sur les "______________" === */
     const wrap = document.getElementById('codeWrap');
-    const box = document.getElementById('cassetteBox');
+    const slot = document.getElementById('slot');
+    const slotEnd = document.getElementById('slot-end');
 
     function placeInput(){
-      // mesure relative à la page
-      const r = slotEl.getBoundingClientRect();
-      const b = box.getBoundingClientRect();
-      // positionner le wrap sur les underscores
-      wrap.style.left = (r.left) + 'px';
-      wrap.style.top  = (r.top) + 'px';
-      wrap.style.width = (r.width) + 'px';
-      // dimensionner l'input à la largeur des underscores
-      const input = document.getElementById('code');
-      input.style.width = Math.max(8, Math.floor(r.width / 9)) + 'ch'; // ajuste automatiquement
+      // coordonnées écran du bloc underscores
+      const r = slot.getBoundingClientRect();
+      // on pose le conteneur exactement dessus
+      wrap.style.left = r.left + 'px';
+      wrap.style.top  = r.top  + 'px';
+      wrap.style.width = r.width + 'px';
     }
     window.addEventListener('load', placeInput);
     window.addEventListener('resize', placeInput);
 
-    /* ---------- Animation scroll : roues + bande ---------- */
+    /* === Animation scroll (roues + bande) === */
     const wL = document.getElementById('wL');
     const wR = document.getElementById('wR');
     const tapeL = document.getElementById('tapeL');
@@ -112,30 +100,24 @@
     const tapeGap = document.getElementById('tapeGap');
 
     const wheelFrames = ['⟳','⟲','↺','↻'];
-    const TOTAL_TAPE = 18;     // longueur visuelle de bande
-    let pos = TOTAL_TAPE - 2;  // départ: bande surtout à gauche
-    let wheel = 0;
-    let accum = 0;
+    const TOTAL_TAPE = 18;
+    let pos = TOTAL_TAPE - 2;  // démarrage: bande surtout à gauche
+    let wheel = 0, accum = 0;
 
     function render(){
-      // bornes
-      if(pos < 0) pos = 0;
-      if(pos > TOTAL_TAPE) pos = TOTAL_TAPE;
-      // bande
+      if(pos<0) pos=0; if(pos>TOTAL_TAPE) pos=TOTAL_TAPE;
       tapeL.textContent = '░'.repeat(pos);
       tapeR.textContent = '░'.repeat(TOTAL_TAPE - pos);
       tapeGap.textContent = '  ';
-      // roues
       wL.textContent = wheelFrames[(wheel) % wheelFrames.length];
       wR.textContent = wheelFrames[(wheel+2) % wheelFrames.length];
-      // recaler l'input après zoom/resize éventuel
+      // si la taille a bougé (rotation/zoom), on recale
       placeInput();
     }
 
-    // défilement : bas = avance, haut = rembobine (amplitude réglable via threshold)
-    window.addEventListener('wheel', (e)=>{
+    window.addEventListener('wheel', e=>{
       accum += Math.abs(e.deltaY);
-      const threshold = 50; // ↑ augmente pour demander plus de scroll
+      const threshold = 50;           // ↑ augmente si tu veux plus d'inertie
       if(accum > threshold){
         const step = e.deltaY > 0 ? 1 : -1;
         pos += step;
