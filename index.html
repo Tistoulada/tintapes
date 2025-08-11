@@ -19,8 +19,7 @@
       margin:0; white-space:pre; text-align:center;
       font-size: var(--fs); line-height: var(--lh);
     }
-
-    /* Le conteneur input+bouton sera positionné AU PIXEL sur les underscores */
+    /* input + bouton : positionnés au pixel par JS sur les underscores */
     .code-wrap{
       position:absolute; display:flex; align-items:center; gap:.6rem;
       pointer-events:auto;
@@ -53,7 +52,7 @@
 └────────────────────────────┘
 </pre>
 
-    <!-- Input calé automatiquement sur les underscores -->
+    <!-- Input calé automatiquement sur les "______________" -->
     <div class="code-wrap" id="codeWrap">
       <input id="code" class="code-input" placeholder="TT-KAL" autocomplete="off" />
       <button id="enterBtn" class="enter-btn">ENTER</button>
@@ -69,40 +68,30 @@
         "TT-BST": "code/boost.html",
         "TT-SWK": "code/superweekend.html",
         "TT-BRI": "code/brie.html",
-        "TT-GST": "code/guest.html"
+        "TT-GST": "code/guest.html" // remplace quand tu as le 5e nom
       };
-      if(map[code]) location.href = map[code]; else alert("Invalid code.");
+      if(map[code]) location.href = map[code];
+      else alert("Invalid code.");
     }
     document.getElementById('enterBtn').addEventListener('click', checkCode);
     document.getElementById('code').addEventListener('keydown', e=>{ if(e.key==='Enter') checkCode(); });
 
-    /* === Placement AUTO sur les "______________" === */
+    /* === Placement AUTO relatif au conteneur === */
+    const stage = document.getElementById('stage');
     const wrap = document.getElementById('codeWrap');
     const slot = document.getElementById('slot');
-    const slotEnd = document.getElementById('slot-end');
 
     function placeInput(){
-   <script>
-  // ...
-  const wrap = document.getElementById('codeWrap');
-  const slot = document.getElementById('slot');
-  const stage = document.getElementById('stage'); // <div class="stage" id="stage">
-
-  function placeInput(){
-    const r = slot.getBoundingClientRect();      // underscores
-    const s = stage.getBoundingClientRect();     // conteneur parent
-    // Positionne wrap en coordonnées relatives au conteneur
-    wrap.style.left  = (r.left - s.left) + 'px';
-    wrap.style.top   = (r.top  - s.top)  + 'px';
-    wrap.style.width = r.width + 'px';
-  }
-
-  window.addEventListener('load', placeInput);
-  window.addEventListener('resize', placeInput);
-  window.addEventListener('orientationchange', placeInput);
-  // ...
-</script>
-
+      const r = slot.getBoundingClientRect();   // underscores (absolu écran)
+      const s = stage.getBoundingClientRect();  // conteneur (absolu écran)
+      // convertir en coordonnées relatives au conteneur
+      wrap.style.left  = (r.left - s.left) + 'px';
+      wrap.style.top   = (r.top  - s.top)  + 'px';
+      wrap.style.width = r.width + 'px';
+    }
+    window.addEventListener('load', placeInput);
+    window.addEventListener('resize', placeInput);
+    window.addEventListener('orientationchange', placeInput);
 
     /* === Animation scroll (roues + bande) === */
     const wL = document.getElementById('wL');
@@ -112,8 +101,8 @@
     const tapeGap = document.getElementById('tapeGap');
 
     const wheelFrames = ['⟳','⟲','↺','↻'];
-    const TOTAL_TAPE = 18;
-    let pos = TOTAL_TAPE - 2;  // démarrage: bande surtout à gauche
+    const TOTAL_TAPE = 18;    // longueur visuelle
+    let pos = TOTAL_TAPE - 2; // départ : surtout à gauche
     let wheel = 0, accum = 0;
 
     function render(){
@@ -123,13 +112,13 @@
       tapeGap.textContent = '  ';
       wL.textContent = wheelFrames[(wheel) % wheelFrames.length];
       wR.textContent = wheelFrames[(wheel+2) % wheelFrames.length];
-      // si la taille a bougé (rotation/zoom), on recale
+      // si la taille/zoom change, on recale
       placeInput();
     }
 
     window.addEventListener('wheel', e=>{
       accum += Math.abs(e.deltaY);
-      const threshold = 50;           // ↑ augmente si tu veux plus d'inertie
+      const threshold = 50; // ↑ augmente pour demander plus de scroll
       if(accum > threshold){
         const step = e.deltaY > 0 ? 1 : -1;
         pos += step;
@@ -143,3 +132,4 @@
   </script>
 </body>
 </html>
+
