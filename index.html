@@ -5,63 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TinTapes</title>
   <style>
-    :root {
-      --fs: 2.8vw; 
-      --lh: 1.08; 
+    :root{ --fs: 2.8vw; --lh: 1.08; }
+    @media (max-width: 700px){ :root{ --fs: 4.8vw; --lh: 1.04; } }
+
+    html,body{
+      margin:0; min-height:100%;
+      background:#000; color:#fff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      display:flex; align-items:center; justify-content:center;
     }
-    @media (max-width: 700px) {
-      :root {
-        --fs: 4.8vw; 
-        --lh: 1.04; 
-      }
+    .stage{ position:relative; }
+    pre#art{
+      margin:0; white-space:pre; text-align:center;
+      font-size: var(--fs); line-height: var(--lh);
     }
 
-    html, body {
-      margin: 0; 
-      min-height: 100%;
-      background: #000; 
-      color: #fff;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      display: flex; 
-      align-items: center; 
-      justify-content: center;
+    /* Input + bouton positionnés au pixel via JS */
+    #codeInput, #enterBtn{
+      position:absolute; z-index:10; /* au-dessus de l’ASCII */
+      font: inherit;
     }
-    .stage { 
-      position: relative; 
-    }
-    pre#art {
-      margin: 0; 
-      white-space: pre; 
-      text-align: center;
-      font-size: var(--fs); 
-      line-height: var(--lh);
-    }
-
-    .code-wrap {
-      position: absolute; 
-      display: flex; 
-      align-items: center; 
-      gap: .6rem;
-      pointer-events: auto;
-    }
-    .code-input {
-      background: #111; 
-      color: #fff; 
-      border: 1px solid #444;
-      padding: .32rem .5rem; 
-      text-align: center; 
-      width: 10ch;
-      font: inherit; 
+    #codeInput{
+      background:#111; color:#fff; border:1px solid #444;
+      padding:.3rem .5rem; text-align:center;
       font-size: clamp(14px,1.1rem,4.2vw);
+      width:10ch;            /* surchargé par JS pour remplir les underscores */
     }
-    .enter-btn {
-      background: #222; 
-      color: #fff; 
-      border: 1px solid #444;
-      padding: .32rem .6rem; 
-      cursor: pointer;
-      font: inherit; 
+    #enterBtn{
+      background:#222; color:#fff; border:1px solid #444;
+      padding:.3rem .6rem; cursor:pointer;
       font-size: clamp(14px,1.05rem,4.2vw);
+      white-space:nowrap;
     }
   </style>
 </head>
@@ -77,11 +51,100 @@
 │                            │
 │    4 TRACKS // ONE TAKE    │
 │         INSERT CODE        │
-│      [______________]      │
+│      <span id="slot-start">[</span><span id="slot">______________</span><span id="slot-end">]</span>      │
 └────────────────────────────┘
 </pre>
 
-    <div class="code-wrap" id="codeWrap">
-      <input id="code" class="code-input" placeholder=
+    <!-- éléments réels -->
+    <input id="codeInput" placeholder="TT-KAL" autocomplete="off" />
+    <button id="enterBtn">ENTER</button>
+  </div>
+
+  <script>
+    /* === Codes -> pages === */
+    function checkCode(){
+      const code = document.getElementById('codeInput').value.trim().toUpperCase();
+      const map = {
+        "TT-KAL": "code/kalupto.html",
+        "TT-BST": "code/boost.html",
+        "TT-SWK": "code/superweekend.html",
+        "TT-BRI": "code/brie.html",
+        "TT-GST": "code/guest.html"
+      };
+      if(map[code]) location.href = map[code];
+      else alert("Invalid code.");
+    }
+    const codeEl = document.getElementById('codeInput');
+    document.getElementById('enterBtn').addEventListener('click', checkCode);
+    codeEl.addEventListener('keydown', e=>{ if(e.key==='Enter') checkCode(); });
+
+    /* === Placement : input sur les underscores, bouton sur le ']' === */
+    const stage   = document.getElementById('stage');
+    const slot    = document.getElementById('slot');
+    const slotEnd = document.getElementById('slot-end');
+    const inputEl = document.getElementById('codeInput');
+    const btnEl   = document.getElementById('enterBtn');
+
+    function placeControls(){
+      const s  = stage.getBoundingClientRect();
+      const rs = slot.getBoundingClientRect();
+      const re = slotEnd.getBoundingClientRect();
+
+      // largeur de l’input = largeur exacte des underscores - marge
+      const margin = 8; // laisse de l’air avec les crochets
+      const inputW = Math.max(40, rs.width - margin*2);
+      inputEl.style.width = inputW + 'px';
+
+      // position relative au conteneur
+      inputEl.style.left = (rs.left - s.left + margin) + 'px';
+      inputEl.style.top  =  (rs.top  - s.top) + 'px';
+
+      // bouton juste après le ]
+      const desktopOffset = window.matchMedia('(min-width: 701px)').matches ? 6 : 2;
+      btnEl.style.left = (re.right - s.left + desktopOffset) + 'px';
+      btnEl.style.top  =  (rs.top   - s.top) + 'px';
+    }
+    window.addEventListener('load', placeControls);
+    window.addEventListener('resize', placeControls);
+    window.addEventListener('orientationchange', placeControls);
+
+    /* === Animation scroll (roues + bande) === */
+    const wL = document.getElementById('wL');
+    const wR = document.getElementById('wR');
+    const tapeL = document.getElementById('tapeL');
+    const tapeR = document.getElementById('tapeR');
+    const tapeGap = document.getElementById('tapeGap');
+
+    const wheelFrames = ['⟳','⟲','↺','↻'];
+    const TOTAL_TAPE = 18;      // longueur visuelle de bande
+    let pos = TOTAL_TAPE - 2;   // départ: surtout à gauche
+    let wheel = 0, accum = 0;
+
+    function render(){
+      if(pos<0) pos=0; if(pos>TOTAL_TAPE) pos=TOTAL_TAPE;
+      tapeL.textContent = '░'.repeat(pos);
+      tapeR.textContent = '░'.repeat(TOTAL_TAPE - pos);
+      tapeGap.textContent = '  ';
+      wL.textContent = wheelFrames[(wheel) % wheelFrames.length];
+      wR.textContent = wheelFrames[(wheel+2) % wheelFrames.length];
+      placeControls(); // recale au cas où
+    }
+
+    window.addEventListener('wheel', e=>{
+      accum += Math.abs(e.deltaY);
+      const threshold = 50; // ↑ plus grand = plus d’inertie
+      if(accum > threshold){
+        const step = e.deltaY > 0 ? 1 : -1;
+        pos += step;
+        wheel = (wheel + step + 1000) % 1000;
+        accum = 0;
+        render();
+      }
+    }, {passive:true});
+
+    render();
+  </script>
+</body>
+</html>
 
 
