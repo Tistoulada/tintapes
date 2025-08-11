@@ -82,15 +82,27 @@
     const slotEnd = document.getElementById('slot-end');
 
     function placeInput(){
-      // coordonnées écran du bloc underscores
-      const r = slot.getBoundingClientRect();
-      // on pose le conteneur exactement dessus
-      wrap.style.left = r.left + 'px';
-      wrap.style.top  = r.top  + 'px';
-      wrap.style.width = r.width + 'px';
-    }
-    window.addEventListener('load', placeInput);
-    window.addEventListener('resize', placeInput);
+   <script>
+  // ...
+  const wrap = document.getElementById('codeWrap');
+  const slot = document.getElementById('slot');
+  const stage = document.getElementById('stage'); // <div class="stage" id="stage">
+
+  function placeInput(){
+    const r = slot.getBoundingClientRect();      // underscores
+    const s = stage.getBoundingClientRect();     // conteneur parent
+    // Positionne wrap en coordonnées relatives au conteneur
+    wrap.style.left  = (r.left - s.left) + 'px';
+    wrap.style.top   = (r.top  - s.top)  + 'px';
+    wrap.style.width = r.width + 'px';
+  }
+
+  window.addEventListener('load', placeInput);
+  window.addEventListener('resize', placeInput);
+  window.addEventListener('orientationchange', placeInput);
+  // ...
+</script>
+
 
     /* === Animation scroll (roues + bande) === */
     const wL = document.getElementById('wL');
