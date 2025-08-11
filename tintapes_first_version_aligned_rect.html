@@ -1,0 +1,99 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TinTapes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root{
+      --fs: 2.8vw;     /* scale of the cassette */
+      --lh: 1.08;      /* line-height: lower = more rectangular */
+      --input-top: 69%;/* position the input vertically (was 73%) */
+    }
+    @media (max-width: 700px){
+      :root{ --fs: 5.2vw; --lh: 1.02; --input-top: 68%; }
+    }
+    body {
+      background: #000;
+      color: #fff;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .cassette {
+      white-space: pre;
+      font-size: var(--fs);
+      line-height: var(--lh);
+      text-align: center;
+      position: relative;
+    }
+    .code-input {
+      position: absolute;
+      top: var(--input-top); /* raise the input above the white line */
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      pointer-events: auto;
+    }
+    input {
+      background: #111;
+      color: #fff;
+      border: 1px solid #444;
+      padding: 0.35rem 0.5rem;
+      font-family: monospace;
+      font-size: 1.2rem;
+      width: 11ch;
+      text-align: center;
+    }
+    button {
+      background: #222;
+      color: #fff;
+      border: 1px solid #444;
+      padding: 0.35rem 0.7rem;
+      cursor: pointer;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="cassette">
+┌────────────────────────────┐
+│                            │
+│         TIN TAPES          │
+│      ╔════════════╗        │
+│  ⟳ ║ ░░         ░░ ║ ⟳  │
+│      ╚════════════╝        │
+│                            │
+│    4 TRACKS // ONE TAKE    │
+│         INSERT CODE        │
+│      [______________]      │
+└────────────────────────────┘
+
+    <div class="code-input">
+      <input type="text" id="code" placeholder="TT-001">
+      <button onclick="checkCode()">ENTER</button>
+    </div>
+  </div>
+
+  <script>
+    function checkCode() {
+      const code = document.getElementById('code').value.trim().toUpperCase();
+      const codeMap = {
+        "TT-001": "code/TT-001.html"
+      };
+      if (codeMap[code]) {
+        window.location.href = codeMap[code];
+      } else {
+        alert("Invalid code.");
+      }
+    }
+  </script>
+</body>
+</html>
