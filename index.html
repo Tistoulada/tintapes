@@ -92,7 +92,7 @@
       const inner = Math.max(0, rr.left - rl.right);
 
       // on réduit volontairement à 80% pour être sûr que ça rentre partout
-      const shrink = 0.78;
+      const shrink = 0.75;
       const pad = Math.max(4, inner * (1 - shrink) / 2); // marge visuelle à gauche/droite
       const width = Math.max(80, inner * shrink);        // borne mini
 
