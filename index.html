@@ -6,7 +6,7 @@
   <title>TinTapes</title>
   <style>
     :root{ --fs: 2.8vw; --lh: 1.08; }
-    @media (max-width: 700px){ :root{ --fs: 4.8vw; --lh: 1.04; } } /* cassette un peu plus petite sur mobile */
+    @media (max-width: 700px){ :root{ --fs: 4.8vw; --lh: 1.04; } } /* cassette visible en entier sur mobile */
 
     html,body{
       margin:0; min-height:100%;
@@ -20,21 +20,20 @@
       font-size: var(--fs); line-height: var(--lh);
     }
 
-    /* Input + bouton (placés au pixel par JS) */
+    /* champs réels (positionnés au pixel) */
     #codeInput, #enterBtn{
       position:absolute; z-index:10; font:inherit; pointer-events:auto;
     }
     #codeInput{
       background:#111; color:#fff; border:1px solid #444;
-      padding:.3rem .5rem; text-align:center;
-      font-size: clamp(14px,1.1rem,4.2vw);
-      box-sizing: border-box;           /* largeur = contenu + padding + bordure */
+      padding:.28rem .48rem; text-align:center; box-sizing:border-box;
+      font-size: clamp(14px,1.05rem,4.2vw);
     }
-    #codeInput::placeholder{ color:transparent; } /* au cas où un placeholder traîne */
+    #codeInput::placeholder{ color:transparent; } /* pas de texte fantôme */
     #enterBtn{
       background:#222; color:#fff; border:1px solid #444;
-      padding:.3rem .6rem; cursor:pointer;
-      font-size: clamp(14px,1.05rem,4.2vw); white-space:nowrap;
+      padding:.28rem .52rem; cursor:pointer; white-space:nowrap;
+      font-size: clamp(14px,1rem,4.2vw);
     }
   </style>
 </head>
@@ -70,14 +69,13 @@
         "TT-BRI": "code/brie.html",
         "TT-GST": "code/guest.html"
       };
-      if(map[code]) location.href = map[code];
-      else alert("Invalid code.");
+      if(map[code]) location.href = map[code]; else alert("Invalid code.");
     }
     const inputEl = document.getElementById('codeInput');
     document.getElementById('enterBtn').addEventListener('click', checkCode);
     inputEl.addEventListener('keydown', e=>{ if(e.key==='Enter') checkCode(); });
 
-    /* === Placement : input centré entre [ et ], plus petit (80%) === */
+    /* === Placement robuste: mesuré entre [ et ] + recalcul auto === */
     const stage   = document.getElementById('stage');
     const slotL   = document.getElementById('slot-start'); // '['
     const slotR   = document.getElementById('slot-end');   // ']'
@@ -88,27 +86,32 @@
       const rl = slotL.getBoundingClientRect();
       const rr = slotR.getBoundingClientRect();
 
-      // largeur intérieure exacte entre [ et ]
-      const inner = Math.max(0, rr.left - rl.right);
+      // largeur intérieure exacte entre [ et ], sécurisée par un shrink
+      const inner   = Math.max(0, rr.left - rl.right);
+      const shrink  = 0.80;                 // 80% de l'espace (sécurité)
+      const width   = Math.max(80, inner * shrink);
+      const pad     = (inner - width) / 2;  // centrage parfait
 
-      // on réduit volontairement à 80% pour être sûr que ça rentre partout
-      const shrink = 0.62;
-      const pad = Math.max(4, inner * (1 - shrink) / 2); // marge visuelle à gauche/droite
-      const width = Math.max(80, inner * shrink);        // borne mini
+      // position relative au conteneur + centrage vertical sur la ligne
+      const centerY = (rl.top + rl.bottom) / 2 - s.top;
+      const inputTop = centerY - (inputEl.offsetHeight || 32) / 2; // si pas mesuré, 32px approx
 
-      // input centré entre les crochets (relative au conteneur)
       inputEl.style.width = width + 'px';
       inputEl.style.left  = (rl.right - s.left + pad) + 'px';
-      inputEl.style.top   = (rl.top   - s.top)        + 'px';
+      inputEl.style.top   = inputTop + 'px';
 
-      // bouton juste après le ]
+      // bouton collé après le ], avec un petit écart qui s'adapte
       const after = window.matchMedia('(min-width:701px)').matches ? 8 : 4;
+      const btnTop = centerY - (btnEl.offsetHeight || 28) / 2;
       btnEl.style.left = (rr.right - s.left + after) + 'px';
-      btnEl.style.top  = (rr.top    - s.top)         + 'px';
+      btnEl.style.top  = btnTop + 'px';
     }
+
+    // recalcule sur: chargement, resize, rotation, et aussi quand la police/metrics évoluent
     window.addEventListener('load', placeControls);
     window.addEventListener('resize', placeControls);
     window.addEventListener('orientationchange', placeControls);
+    new ResizeObserver(placeControls).observe(document.getElementById('art'));
 
     /* === Animation scroll (roues + bande) === */
     const wL = document.getElementById('wL');
@@ -129,12 +132,12 @@
       tapeGap.textContent = '  ';
       wL.textContent = wheelFrames[(wheel) % wheelFrames.length];
       wR.textContent = wheelFrames[(wheel+2) % wheelFrames.length];
-      placeControls(); // recale si zoom/resize
+      placeControls(); // recale si la taille visuelle a bougé
     }
 
     window.addEventListener('wheel', e=>{
       accum += Math.abs(e.deltaY);
-      const threshold = 50; // ↑ plus grand = plus d’inertie
+      const threshold = 50; // ↑ augmente pour demander plus de scroll
       if(accum > threshold){
         const step = e.deltaY > 0 ? 1 : -1;
         pos += step;
@@ -148,5 +151,6 @@
   </script>
 </body>
 </html>
+
 
 
