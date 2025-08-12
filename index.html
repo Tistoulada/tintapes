@@ -6,7 +6,7 @@
   <title>TinTapes</title>
   <style>
     :root{ --fs: 2.8vw; --lh: 1.08; }
-    @media (max-width: 700px){ :root{ --fs: 4.8vw; --lh: 1.04; } } /* cassette visible en entier sur mobile */
+    @media (max-width: 700px){ :root{ --fs: 4.8vw; --lh: 1.04; } }
 
     html,body{
       margin:0; min-height:100%;
@@ -20,7 +20,7 @@
       font-size: var(--fs); line-height: var(--lh);
     }
 
-    /* champs réels (positionnés au pixel) */
+    /* champs réels positionnés au pixel */
     #codeInput, #enterBtn{
       position:absolute; z-index:10; font:inherit; pointer-events:auto;
     }
@@ -29,11 +29,15 @@
       padding:.28rem .48rem; text-align:center; box-sizing:border-box;
       font-size: clamp(14px,1.05rem,4.2vw);
     }
-    #codeInput::placeholder{ color:transparent; } /* pas de texte fantôme */
+    #codeInput::placeholder{ color:transparent; }
     #enterBtn{
       background:#222; color:#fff; border:1px solid #444;
       padding:.28rem .52rem; cursor:pointer; white-space:nowrap;
       font-size: clamp(14px,1rem,4.2vw);
+    }
+    @media (max-width:700px){
+      #codeInput{ font-size: clamp(13px, 3.2vw, 18px); padding:.22rem .4rem; }
+      #enterBtn{  font-size: clamp(13px, 3.1vw, 18px); padding:.22rem .38rem; }
     }
   </style>
 </head>
@@ -75,10 +79,10 @@
     document.getElementById('enterBtn').addEventListener('click', checkCode);
     inputEl.addEventListener('keydown', e=>{ if(e.key==='Enter') checkCode(); });
 
-    /* === Placement robuste: mesuré entre [ et ] + recalcul auto === */
+    /* === Placement: mesure exacte entre [ et ] + shrink mobile === */
     const stage   = document.getElementById('stage');
-    const slotL   = document.getElementById('slot-start'); // '['
-    const slotR   = document.getElementById('slot-end');   // ']'
+    const slotL   = document.getElementById('slot-start');
+    const slotR   = document.getElementById('slot-end');
     const btnEl   = document.getElementById('enterBtn');
 
     function placeControls(){
@@ -86,29 +90,27 @@
       const rl = slotL.getBoundingClientRect();
       const rr = slotR.getBoundingClientRect();
 
-      // largeur intérieure exacte entre [ et ], sécurisée par un shrink
-      const inner   = Math.max(0, rr.left - rl.right);
-      const shrink  = window.matchMedia('(max-width:700px)').matches ? 0.45 : 0.80;
-      const width   = Math.max(80, inner * shrink);
-      const pad     = (inner - width) / 2;  // centrage parfait
+      const inner = Math.max(0, rr.left - rl.right);                // largeur entre [ et ]
+      const isMobile = window.matchMedia('(max-width:700px)').matches;
+      const shrink   = isMobile ? 0.45 : 0.80;                       // 45% mobile, 80% desktop
+      const width    = Math.max(80, inner * shrink);
+      const pad      = (inner - width) / 2;
 
-      // position relative au conteneur + centrage vertical sur la ligne
       const centerY = (rl.top + rl.bottom) / 2 - s.top;
-      const inputTop = centerY - (inputEl.offsetHeight || 32) / 2; // si pas mesuré, 32px approx
+      const inputTop = centerY - (inputEl.offsetHeight || 30) / 2;
 
       inputEl.style.width = width + 'px';
       inputEl.style.left  = (rl.right - s.left + pad) + 'px';
       inputEl.style.top   = inputTop + 'px';
 
-      // bouton collé après le ], avec un petit écart qui s'adapte
-      const after = window.matchMedia('(min-width:701px)').matches ? 8 : 4;
+      const after = isMobile ? 4 : 8;                                // écart après ]
       const btnTop = centerY - (btnEl.offsetHeight || 28) / 2;
       btnEl.style.left = (rr.right - s.left + after) + 'px';
       btnEl.style.top  = btnTop + 'px';
     }
 
-    // recalcule sur: chargement, resize, rotation, et aussi quand la police/metrics évoluent
-    window.addEventListener('load', placeControls);
+    // recalculs: load + délai (mobile), resize, orientation, mutation du <pre>
+    window.addEventListener('load', () => { placeControls(); setTimeout(placeControls, 300); });
     window.addEventListener('resize', placeControls);
     window.addEventListener('orientationchange', placeControls);
     new ResizeObserver(placeControls).observe(document.getElementById('art'));
@@ -121,8 +123,8 @@
     const tapeGap = document.getElementById('tapeGap');
 
     const wheelFrames = ['⟳','⟲','↺','↻'];
-    const TOTAL_TAPE = 18;     // longueur visuelle de bande
-    let pos = TOTAL_TAPE - 2;  // départ: surtout à gauche
+    const TOTAL_TAPE = 18;
+    let pos = TOTAL_TAPE - 2;
     let wheel = 0, accum = 0;
 
     function render(){
@@ -132,12 +134,12 @@
       tapeGap.textContent = '  ';
       wL.textContent = wheelFrames[(wheel) % wheelFrames.length];
       wR.textContent = wheelFrames[(wheel+2) % wheelFrames.length];
-      placeControls(); // recale si la taille visuelle a bougé
+      placeControls();
     }
 
     window.addEventListener('wheel', e=>{
       accum += Math.abs(e.deltaY);
-      const threshold = 50; // ↑ augmente pour demander plus de scroll
+      const threshold = 50;
       if(accum > threshold){
         const step = e.deltaY > 0 ? 1 : -1;
         pos += step;
