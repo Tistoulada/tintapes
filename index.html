@@ -38,6 +38,8 @@
       white-space:nowrap;
     }
   </style>
+#codeInput{ box-sizing: border-box; }
+
 </head>
 <body>
   <div class="stage" id="stage">
@@ -86,27 +88,40 @@
     const btnEl   = document.getElementById('enterBtn');
 
     function placeControls(){
-      const s  = stage.getBoundingClientRect();
-      const rs = slot.getBoundingClientRect();
-      const re = slotEnd.getBoundingClientRect();
+     <script>
+  const stage   = document.getElementById('stage');
+  const slotL   = document.getElementById('slot-start'); // '['
+  const slotR   = document.getElementById('slot-end');   // ']'
+  const inputEl = document.getElementById('codeInput');
+  const btnEl   = document.getElementById('enterBtn');
 
-      // largeur de l’input = largeur exacte des underscores - marge
-      const margin = 8; // laisse de l’air avec les crochets
-      const inputW = Math.max(40, rs.width - margin*2);
-      inputEl.style.width = inputW + 'px';
+  function placeControls(){
+    const s  = stage.getBoundingClientRect();
+    const rl = slotL.getBoundingClientRect(); // crochet gauche
+    const rr = slotR.getBoundingClientRect(); // crochet droit
 
-      // position relative au conteneur
-      inputEl.style.left = (rs.left - s.left + margin) + 'px';
-      inputEl.style.top  =  (rs.top  - s.top) + 'px';
+    // largeur intérieure EXACTE entre [ et ]
+    const inner = Math.max(0, rr.left - rl.right);
 
-      // bouton juste après le ]
-      const desktopOffset = window.matchMedia('(min-width: 701px)').matches ? 6 : 2;
-      btnEl.style.left = (re.right - s.left + desktopOffset) + 'px';
-      btnEl.style.top  =  (rs.top   - s.top) + 'px';
-    }
-    window.addEventListener('load', placeControls);
-    window.addEventListener('resize', placeControls);
-    window.addEventListener('orientationchange', placeControls);
+    // padding interne (espace visuel à gauche/droite)
+    const pad = 6; // ajuste à 4/8 si tu veux
+    const inputW = Math.max(60, inner - pad*2);
+
+    // positionner l'input pile entre les crochets
+    inputEl.style.width = inputW + 'px';
+    inputEl.style.left  = (rl.right - s.left + pad) + 'px';
+    inputEl.style.top   = (rl.top   - s.top)        + 'px';
+
+    // bouton juste après le ]
+    const after = (window.matchMedia('(min-width:701px)').matches ? 8 : 4);
+    btnEl.style.left = (rr.right - s.left + after) + 'px';
+    btnEl.style.top  = (rr.top    - s.top)         + 'px';
+  }
+
+  window.addEventListener('load', placeControls);
+  window.addEventListener('resize', placeControls);
+  window.addEventListener('orientationchange', placeControls);
+</script>
 
     /* === Animation scroll (roues + bande) === */
     const wL = document.getElementById('wL');
