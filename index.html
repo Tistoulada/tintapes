@@ -6,7 +6,7 @@
   <title>TinTapes</title>
   <style>
     :root{ --fs: 2.8vw; --lh: 1.08; }
-    @media (max-width: 700px){ :root{ --fs: 4.8vw; --lh: 1.04; } }
+    @media (max-width: 700px){ :root{ --fs: 4.8vw; --lh: 1.04; } } /* cassette un peu plus petite sur mobile */
 
     html,body{
       margin:0; min-height:100%;
@@ -20,26 +20,23 @@
       font-size: var(--fs); line-height: var(--lh);
     }
 
-    /* Input + bouton positionnés au pixel via JS */
+    /* Input + bouton (placés au pixel par JS) */
     #codeInput, #enterBtn{
-      position:absolute; z-index:10; /* au-dessus de l’ASCII */
-      font: inherit;
+      position:absolute; z-index:10; font:inherit; pointer-events:auto;
     }
     #codeInput{
       background:#111; color:#fff; border:1px solid #444;
       padding:.3rem .5rem; text-align:center;
       font-size: clamp(14px,1.1rem,4.2vw);
-      width:10ch;            /* surchargé par JS pour remplir les underscores */
+      box-sizing: border-box;           /* largeur = contenu + padding + bordure */
     }
+    #codeInput::placeholder{ color:transparent; } /* au cas où un placeholder traîne */
     #enterBtn{
       background:#222; color:#fff; border:1px solid #444;
       padding:.3rem .6rem; cursor:pointer;
-      font-size: clamp(14px,1.05rem,4.2vw);
-      white-space:nowrap;
+      font-size: clamp(14px,1.05rem,4.2vw); white-space:nowrap;
     }
   </style>
-#codeInput{ box-sizing: border-box; }
-
 </head>
 <body>
   <div class="stage" id="stage">
@@ -57,8 +54,8 @@
 └────────────────────────────┘
 </pre>
 
-    <!-- éléments réels -->
-    <input id="codeInput" placeholder="TT-KAL" autocomplete="off" />
+    <!-- champs réels -->
+    <input id="codeInput" autocomplete="off" autocapitalize="characters" spellcheck="false" />
     <button id="enterBtn">ENTER</button>
   </div>
 
@@ -76,52 +73,42 @@
       if(map[code]) location.href = map[code];
       else alert("Invalid code.");
     }
-    const codeEl = document.getElementById('codeInput');
-    document.getElementById('enterBtn').addEventListener('click', checkCode);
-    codeEl.addEventListener('keydown', e=>{ if(e.key==='Enter') checkCode(); });
-
-    /* === Placement : input sur les underscores, bouton sur le ']' === */
-    const stage   = document.getElementById('stage');
-    const slot    = document.getElementById('slot');
-    const slotEnd = document.getElementById('slot-end');
     const inputEl = document.getElementById('codeInput');
+    document.getElementById('enterBtn').addEventListener('click', checkCode);
+    inputEl.addEventListener('keydown', e=>{ if(e.key==='Enter') checkCode(); });
+
+    /* === Placement : input centré entre [ et ], plus petit (80%) === */
+    const stage   = document.getElementById('stage');
+    const slotL   = document.getElementById('slot-start'); // '['
+    const slotR   = document.getElementById('slot-end');   // ']'
     const btnEl   = document.getElementById('enterBtn');
 
     function placeControls(){
-     <script>
-  const stage   = document.getElementById('stage');
-  const slotL   = document.getElementById('slot-start'); // '['
-  const slotR   = document.getElementById('slot-end');   // ']'
-  const inputEl = document.getElementById('codeInput');
-  const btnEl   = document.getElementById('enterBtn');
+      const s  = stage.getBoundingClientRect();
+      const rl = slotL.getBoundingClientRect();
+      const rr = slotR.getBoundingClientRect();
 
-  function placeControls(){
-    const s  = stage.getBoundingClientRect();
-    const rl = slotL.getBoundingClientRect(); // crochet gauche
-    const rr = slotR.getBoundingClientRect(); // crochet droit
+      // largeur intérieure exacte entre [ et ]
+      const inner = Math.max(0, rr.left - rl.right);
 
-    // largeur intérieure EXACTE entre [ et ]
-    const inner = Math.max(0, rr.left - rl.right);
+      // on réduit volontairement à 80% pour être sûr que ça rentre partout
+      const shrink = 0.80;
+      const pad = Math.max(4, inner * (1 - shrink) / 2); // marge visuelle à gauche/droite
+      const width = Math.max(80, inner * shrink);        // borne mini
 
-    // padding interne (espace visuel à gauche/droite)
-    const pad = 6; // ajuste à 4/8 si tu veux
-    const inputW = Math.max(60, inner - pad*2);
+      // input centré entre les crochets (relative au conteneur)
+      inputEl.style.width = width + 'px';
+      inputEl.style.left  = (rl.right - s.left + pad) + 'px';
+      inputEl.style.top   = (rl.top   - s.top)        + 'px';
 
-    // positionner l'input pile entre les crochets
-    inputEl.style.width = inputW + 'px';
-    inputEl.style.left  = (rl.right - s.left + pad) + 'px';
-    inputEl.style.top   = (rl.top   - s.top)        + 'px';
-
-    // bouton juste après le ]
-    const after = (window.matchMedia('(min-width:701px)').matches ? 8 : 4);
-    btnEl.style.left = (rr.right - s.left + after) + 'px';
-    btnEl.style.top  = (rr.top    - s.top)         + 'px';
-  }
-
-  window.addEventListener('load', placeControls);
-  window.addEventListener('resize', placeControls);
-  window.addEventListener('orientationchange', placeControls);
-</script>
+      // bouton juste après le ]
+      const after = window.matchMedia('(min-width:701px)').matches ? 8 : 4;
+      btnEl.style.left = (rr.right - s.left + after) + 'px';
+      btnEl.style.top  = (rr.top    - s.top)         + 'px';
+    }
+    window.addEventListener('load', placeControls);
+    window.addEventListener('resize', placeControls);
+    window.addEventListener('orientationchange', placeControls);
 
     /* === Animation scroll (roues + bande) === */
     const wL = document.getElementById('wL');
@@ -131,8 +118,8 @@
     const tapeGap = document.getElementById('tapeGap');
 
     const wheelFrames = ['⟳','⟲','↺','↻'];
-    const TOTAL_TAPE = 18;      // longueur visuelle de bande
-    let pos = TOTAL_TAPE - 2;   // départ: surtout à gauche
+    const TOTAL_TAPE = 18;     // longueur visuelle de bande
+    let pos = TOTAL_TAPE - 2;  // départ: surtout à gauche
     let wheel = 0, accum = 0;
 
     function render(){
@@ -142,7 +129,7 @@
       tapeGap.textContent = '  ';
       wL.textContent = wheelFrames[(wheel) % wheelFrames.length];
       wR.textContent = wheelFrames[(wheel+2) % wheelFrames.length];
-      placeControls(); // recale au cas où
+      placeControls(); // recale si zoom/resize
     }
 
     window.addEventListener('wheel', e=>{
