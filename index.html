@@ -88,7 +88,7 @@
 
       // largeur intérieure exacte entre [ et ], sécurisée par un shrink
       const inner   = Math.max(0, rr.left - rl.right);
-      const shrink  = window.matchMedia('(max-width:700px)').matches ? 0.55 : 0.80;
+      const shrink  = window.matchMedia('(max-width:700px)').matches ? 0.45 : 0.80;
       const width   = Math.max(80, inner * shrink);
       const pad     = (inner - width) / 2;  // centrage parfait
 
