@@ -1,12 +1,65 @@
 <!DOCTYPE html>
-<html lang="fr"><head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SUPERWEEKEND — TinTapes</title>
-  <style>body{background:#000;color:#fff;font-family:monospace;margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;text-align:center}a.back{position:fixed;top:14px;left:14px;color:#aaa;text-decoration:none}audio{width:min(640px,86vw)}</style>
-</head><body>
+  <style>
+    body {
+      background:#000;
+      color:#fff;
+      font-family:monospace;
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:1rem;
+      text-align:center;
+    }
+    a.back {
+      position:fixed;
+      top:14px;
+      left:14px;
+      color:#aaa;
+      text-decoration:none;
+    }
+    audio {
+      width:min(640px,86vw);
+    }
+    .moto {
+      position: absolute;
+      top: 50px;  /* starting position */
+      left: 50px;
+      width: 32px; /* adjust size */
+      z-index: 9999;
+      animation: cityRide 12s linear infinite;
+    }
+
+    /* Define a more complex "city ride" path */
+    @keyframes cityRide {
+      0%   { top: 50px;  left: 50px; }
+      10%  { top: 80px;  left: 200px; }
+      20%  { top: 150px; left: 300px; }
+      30%  { top: 200px; left: 150px; }
+      40%  { top: 100px; left: 400px; }
+      50%  { top: 250px; left: 500px; }
+      60%  { top: 300px; left: 350px; }
+      70%  { top: 150px; left: 250px; }
+      80%  { top: 100px; left: 100px; }
+      90%  { top: 180px; left: 200px; }
+      100% { top: 50px;  left: 50px; } /* back to start */
+    }
+  </style>
+</head>
+<body>
   <a class="back" href="../index.html">← TinTapes</a>
   <h1>SUPERWEEKEND</h1>
   <p>Session 4-tracks — TinTapes exclusive.</p>
-  <audio controls preload="metadata"><source src="superweekend.mp3" type="audio/mpeg"></audio>
+  <audio controls preload="metadata">
+    <source src="superweekend.mp3" type="audio/mpeg">
+  </audio>
   <img src="moto.gif" alt="Moto" class="moto">
-</body></html>
+</body>
+</html>
