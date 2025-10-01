@@ -31,47 +31,42 @@
       width: min(640px, 86vw);
     }
 
-   .moto {
-  position: absolute;
-  width: 64px;
-  height: 64px;
-  z-index: 9999;
-  animation: cityRide 24s linear infinite; /* Durée augmentée pour des boucles fluides */
-  transform: rotate(270deg); /* Position initiale : vers le haut */
-  image-rendering: pixelated;
-  transition: transform 0.5s ease-in-out;
-}
+    .moto {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      z-index: 9999;
+      animation: cityRide 24s linear infinite;
+      transform: rotate(0deg);
+      image-rendering: pixelated;
+      transition: transform 0.5s ease-in-out;
+    }
 
-/* Animation avec des rectangles de tailles différentes et boucle fluide */
-@keyframes cityRide {
-  /* Premier rectangle (petit) */
-  0%   { top: 30%; left: 20%; transform: rotate(270deg); } /* Départ : haut */
-  8%   { top: 10%; left: 20%; transform: rotate(270deg); } /* Monte */
-  10%  { top: 10%; left: 20%; transform: rotate(0deg); }   /* Tourne à droite */
-  18%  { top: 10%; left: 60%; transform: rotate(0deg); }   /* Va à droite */
-  20%  { top: 10%; left: 60%; transform: rotate(90deg); }  /* Tourne vers le bas */
-  28%  { top: 50%; left: 60%; transform: rotate(90deg); }  /* Descend */
-  30%  { top: 50%; left: 60%; transform: rotate(180deg); } /* Tourne à gauche */
-  38%  { top: 50%; left: 20%; transform: rotate(180deg); } /* Va à gauche */
-  40%  { top: 50%; left: 20%; transform: rotate(270deg); } /* Retour vers le haut */
+    @keyframes cityRide {
+      /* Premier rectangle (petit) - Départ vers le haut */
+      0%   { top: 30%; left: 20%; transform: rotate(0deg); }
+      8%   { top: 10%; left: 20%; transform: rotate(0deg); }
+      10%  { top: 10%; left: 20%; transform: rotate(90deg); }
+      20%  { top: 10%; left: 60%; transform: rotate(90deg); }
+      22%  { top: 10%; left: 60%; transform: rotate(180deg); }
+      30%  { top: 50%; left: 60%; transform: rotate(180deg); }
+      32%  { top: 50%; left: 60%; transform: rotate(270deg); }
+      40%  { top: 50%; left: 20%; transform: rotate(270deg); }
 
-  /* Deuxième rectangle (plus grand) */
-  42%  { top: 50%; left: 20%; transform: rotate(270deg); } /* Déjà en position pour la boucle */
-  50%  { top: 10%; left: 20%; transform: rotate(270deg); } /* Monte plus haut */
-  52%  { top: 10%; left: 20%; transform: rotate(0deg); }   /* Tourne à droite */
-  60%  { top: 10%; left: 80%; transform: rotate(0deg); }   /* Va plus loin à droite */
-  62%  { top: 10%; left: 80%; transform: rotate(90deg); }  /* Tourne vers le bas */
-  70%  { top: 70%; left: 80%; transform: rotate(90deg); }  /* Descend plus bas */
-  72%  { top: 70%; left: 80%; transform: rotate(180deg); } /* Tourne à gauche */
-  80%  { top: 70%; left: 10%; transform: rotate(180deg); } /* Va plus loin à gauche */
-  82%  { top: 70%; left: 10%; transform: rotate(270deg); } /* Retour vers le haut */
+      /* Deuxième rectangle (plus grand) */
+      42%  { top: 50%; left: 20%; transform: rotate(0deg); }
+      50%  { top: 10%; left: 20%; transform: rotate(0deg); }
+      52%  { top: 10%; left: 20%; transform: rotate(90deg); }
+      60%  { top: 10%; left: 80%; transform: rotate(90deg); }
+      62%  { top: 10%; left: 80%; transform: rotate(180deg); }
+      70%  { top: 70%; left: 80%; transform: rotate(180deg); }
+      72%  { top: 70%; left: 80%; transform: rotate(270deg); }
+      80%  { top: 70%; left: 20%; transform: rotate(270deg); }
 
-  /* Retour fluide au premier rectangle */
-  90%  { top: 30%; left: 10%; transform: rotate(270deg); } /* Remonte progressivement */
-  100% { top: 30%; left: 20%; transform: rotate(270deg); } /* Position initiale pour la boucle */
-}
-
-
+      /* Retour fluide au premier rectangle */
+      90%  { top: 30%; left: 20%; transform: rotate(0deg); }
+      100% { top: 30%; left: 20%; transform: rotate(0deg); }
+    }
   </style>
 </head>
 <body>
