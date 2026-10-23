@@ -4,18 +4,225 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KALUPTO — TinTapes</title>
   <style>
+    html{overflow:hidden}
     body{background:#000;color:#fff;font-family:monospace;margin:0;min-height:100vh;
-         display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;text-align:center}
-    a.back{position:fixed;top:14px;left:14px;color:#aaa;text-decoration:none}
-    audio{width:min(640px,86vw)}
+         display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none}
+    a.back{position:fixed;top:14px;left:14px;color:#aaa;text-decoration:none;z-index:3}
+
+    /* l'île en fond : présente mais discrète, elle s'éclaire quand le sable s'envole */
+    #island{position:fixed;inset:0;width:100vw;height:100vh;object-fit:contain;z-index:0;
+            opacity:.32;pointer-events:none}
+    @media (max-aspect-ratio:1/1){                             /* téléphone : île plus grande, débordant un peu */
+      #island{inset:auto;left:-40vw;top:50%;width:180vw;height:auto;transform:translateY(-62%)}
+    }
+
+    .player{position:relative;z-index:2;width:min(520px,88vw);padding:1.6rem 1.4rem 1.2rem;box-sizing:border-box;
+            background:rgba(0,0,0,.55);border:1px solid #2a2a2a;
+            backdrop-filter:blur(1.5px);-webkit-backdrop-filter:blur(1.5px)}
+    h1{margin:0 0 .2rem;font-size:1.6rem;letter-spacing:.35em;text-align:center}
+    .sub{margin:0 0 1.2rem;color:#888;font-size:.8rem;text-align:center}
+
+    ol{list-style:none;margin:0 0 1.2rem;padding:0}
+    li{display:flex;gap:.8rem;padding:.45rem .5rem;cursor:pointer;color:#bbb;border-left:2px solid transparent}
+    li:hover{color:#fff;background:rgba(255,255,255,.04)}
+    li .n{color:#555}
+    li .t{flex:1;text-align:left}
+    li .d{color:#555}
+    li.on{color:#fff;border-left-color:#cfe6f7}
+    li.on .n{color:#cfe6f7}
+    li.off{opacity:.45}
+
+    .bar{font-size:.9rem;line-height:1;white-space:nowrap;overflow:hidden;cursor:pointer;color:#555;user-select:none;text-align:center}
+    .bar .done{color:#cfe6f7}
+    .ctrl{display:flex;align-items:center;justify-content:center;gap:1rem;margin-top:.8rem;color:#888;font-size:.85rem}
+    .ctrl button{background:none;border:1px solid #333;color:#fff;font:inherit;padding:.3rem .7rem;cursor:pointer}
+    .ctrl button:hover{border-color:#777}
+    .time{min-width:7.5em;text-align:center}
   </style>
 </head>
 <body>
   <a class="back" href="../index.html">← TinTapes</a>
-  <h1>KALUPTO</h1>
-  <p>Session 4-tracks — TinTapes exclusive.</p>
-  <audio controls preload="metadata">
-    <source src="kalupto.mp3" type="audio/mpeg">
-  </audio>
+  <canvas id="island" aria-hidden="true"></canvas>
+
+  <main class="player">
+    <h1>KALUPTO</h1>
+    <p class="sub">Session 4-tracks — TinTapes exclusive.</p>
+    <ol id="list"></ol>
+    <div class="bar" id="bar"></div>
+    <div class="ctrl">
+      <button id="prev" aria-label="Précédent">◀◀</button>
+      <button id="play" aria-label="Lecture">▶</button>
+      <button id="next" aria-label="Suivant">▶▶</button>
+      <span class="time" id="time">0:00 / 0:00</span>
+    </div>
+    <audio id="audio" preload="metadata"></audio>
+  </main>
+
+  <script>
+    /* === Morceaux : mettre les MP3 dans le dossier code/kalupto/ et changer les titres ici === */
+    const TRACKS = [
+      { title: "Titre 1", file: "kalupto/01.mp3" },
+      { title: "Titre 2", file: "kalupto/02.mp3" },
+      { title: "Titre 3", file: "kalupto/03.mp3" },
+      { title: "Titre 4", file: "kalupto/04.mp3" }
+    ];
+
+    const audio = document.getElementById('audio');
+    const list  = document.getElementById('list');
+    const bar   = document.getElementById('bar');
+    const playB = document.getElementById('play');
+    const timeEl = document.getElementById('time');
+    const BAR_LEN = 32;
+    let current = -1;
+
+    const fmt = s => isFinite(s) ? Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0') : '0:00';
+
+    TRACKS.forEach((tr, i) => {
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="n">${String(i + 1).padStart(2, '0')}</span><span class="t"></span><span class="d"></span>`;
+      li.querySelector('.t').textContent = tr.title;
+      li.addEventListener('click', () => i === current ? toggle() : load(i, true));
+      list.appendChild(li);
+      const probe = new Audio();                              // durée affichée dans la liste
+      probe.preload = 'metadata';
+      probe.addEventListener('loadedmetadata', () => li.querySelector('.d').textContent = fmt(probe.duration));
+      probe.addEventListener('error', () => { li.classList.add('off'); li.querySelector('.d').textContent = 'bientôt'; });
+      probe.src = tr.file;
+    });
+
+    function load(i, autoplay){
+      current = (i + TRACKS.length) % TRACKS.length;
+      [...list.children].forEach((li, k) => li.classList.toggle('on', k === current));
+      audio.src = TRACKS[current].file;
+      if(autoplay) audio.play().catch(() => {});
+      drawBar();
+    }
+    function toggle(){
+      if(current < 0) return load(0, true);
+      audio.paused ? audio.play().catch(() => {}) : audio.pause();
+    }
+    function drawBar(){
+      const r = audio.duration ? audio.currentTime / audio.duration : 0;
+      const n = Math.round(r * BAR_LEN);
+      bar.innerHTML = `<span class="done">${'▓'.repeat(n)}</span>${'░'.repeat(BAR_LEN - n)}`;
+      timeEl.textContent = fmt(audio.currentTime) + ' / ' + fmt(audio.duration);
+    }
+
+    playB.addEventListener('click', toggle);
+    document.getElementById('prev').addEventListener('click', () => load(current - 1, true));
+    document.getElementById('next').addEventListener('click', () => load(current + 1, true));
+    bar.addEventListener('click', e => {
+      if(!audio.duration) return;
+      const r = bar.getBoundingClientRect();
+      audio.currentTime = (e.clientX - r.left) / r.width * audio.duration;
+    });
+    audio.addEventListener('timeupdate', drawBar);
+    audio.addEventListener('loadedmetadata', drawBar);
+    audio.addEventListener('play',  () => playB.textContent = '❚❚');
+    audio.addEventListener('pause', () => playB.textContent = '▶');
+    audio.addEventListener('ended', () => { if(current < TRACKS.length - 1) load(current + 1, true); });
+    drawBar();
+  </script>
+
+  <script>
+    /* === Île en sable : la molette l'érode grain par grain, le vent emporte le sable, puis il revient === */
+    const cv  = document.getElementById('island');
+    const ctx = cv.getContext('2d');
+    const img = new Image();
+    img.src = 'kalupto-island.png';
+
+    const MARGIN = 140;       // espace autour de l'île pour que le sable puisse s'envoler
+    let N = 0, CW = 0, CH = 0, frame, buf;
+    let hx, hy, px, py, vx, vy, col, seed, state;   // un grain = un pixel de l'image
+    let erosion = 0, lastWheel = 0;
+
+    // bruit doux : l'érosion avance par plaques organiques au lieu d'être aléatoire
+    function smoothNoise(w, h, cell){
+      const gw = Math.ceil(w / cell) + 2, gh = Math.ceil(h / cell) + 2;
+      const g = new Float32Array(gw * gh).map(Math.random);
+      return (x, y) => {
+        const fx = x / cell, fy = y / cell, ix = fx | 0, iy = fy | 0;
+        const tx = fx - ix, ty = fy - iy, sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
+        const a = g[iy * gw + ix], b = g[iy * gw + ix + 1], c = g[(iy + 1) * gw + ix], d = g[(iy + 1) * gw + ix + 1];
+        return a + (b - a) * sx + (c - a + (a - b + d - c) * sx) * sy;
+      };
+    }
+
+    img.onload = () => {
+      const W = img.width, H = img.height;
+      const tmp = document.createElement('canvas');
+      tmp.width = W; tmp.height = H;
+      const tctx = tmp.getContext('2d');
+      tctx.drawImage(img, 0, 0);
+      const src = new Uint32Array(tctx.getImageData(0, 0, W, H).data.buffer);
+
+      const big = smoothNoise(W, H, 90), small = smoothNoise(W, H, 18);
+      const idx = [];
+      for(let i = 0; i < src.length; i++) if((src[i] >>> 24) > 0) idx.push(i);
+      N = idx.length;
+      hx = new Float32Array(N); hy = new Float32Array(N);
+      px = new Float32Array(N); py = new Float32Array(N);
+      vx = new Float32Array(N); vy = new Float32Array(N);
+      col = new Uint32Array(N); seed = new Float32Array(N); state = new Uint8Array(N);
+      for(let k = 0; k < N; k++){
+        const i = idx[k], x = i % W, y = (i / W) | 0;
+        hx[k] = px[k] = x + MARGIN; hy[k] = py[k] = y + MARGIN;
+        col[k] = src[i] | 0xff000000;
+        seed[k] = big(x, y) * 0.65 + small(x, y) * 0.25 + Math.random() * 0.10;
+      }
+      CW = cv.width  = W + MARGIN * 2;
+      CH = cv.height = H + MARGIN * 2;
+      frame = ctx.createImageData(CW, CH);
+      buf = new Uint32Array(frame.data.buffer);
+      requestAnimationFrame(loop);
+    };
+
+    function erode(force){
+      erosion = Math.min(1.15, erosion + 0.03 + force * 0.07);
+      lastWheel = performance.now();
+    }
+    window.addEventListener('wheel', e => { e.preventDefault(); erode(Math.min(Math.abs(e.deltaY), 120) / 120); }, {passive:false});
+    let lastY = null;                                         // sur mobile : glisser le doigt
+    window.addEventListener('touchstart', e => { lastY = e.touches[0].clientY; }, {passive:true});
+    window.addEventListener('touchmove', e => {
+      const y = e.touches[0].clientY;
+      if(lastY !== null) erode(Math.min(Math.abs(y - lastY), 40) / 80);
+      lastY = y;
+    }, {passive:true});
+
+    function loop(now){
+      if(now - lastWheel > 500) erosion = Math.max(0, erosion - 0.0016);   // le sable revient petit à petit
+      const t = now * 0.001;
+      const bob = Math.round(Math.sin(now / 900) * 3);                     // l'île flotte doucement
+      buf.fill(0);
+      for(let k = 0; k < N; k++){
+        let x = px[k], y = py[k];
+        if(state[k] === 0){
+          if(seed[k] < erosion){                              // le grain se détache
+            state[k] = 1;
+            vx[k] = 0.2 + Math.random() * 0.6;
+            vy[k] = -0.2 - Math.random() * 0.8;
+          }
+        } else if(seed[k] < erosion){                         // porté par le vent, en volutes
+          vx[k] = vx[k] * 0.975 + 0.007 + 0.05 * Math.sin(y * 0.021 + t * 1.3 + seed[k] * 9);
+          vy[k] = vy[k] * 0.975 - 0.004 + 0.05 * Math.cos(x * 0.017 + t * 0.9 + seed[k] * 7);
+          if(x < 30) vx[k] += 0.04; else if(x > CW - 30) vx[k] -= 0.04;   // le sable reste dans le cadre
+          if(y < 30) vy[k] += 0.04; else if(y > CH - 30) vy[k] -= 0.04;
+          x += vx[k]; y += vy[k];
+        } else {                                              // il revient se poser à sa place
+          const e = 0.035 + seed[k] * 0.03;
+          x += (hx[k] - x) * e + 0.25 * Math.sin(y * 0.03 + t * 2);
+          y += (hy[k] - y) * e;
+          if(Math.abs(hx[k] - x) < 0.6 && Math.abs(hy[k] - y) < 0.6){ x = hx[k]; y = hy[k]; state[k] = 0; }
+        }
+        px[k] = x; py[k] = y;
+        const ix = x | 0, iy = (y | 0) + bob;
+        if(ix >= 0 && ix < CW && iy >= 0 && iy < CH) buf[iy * CW + ix] = col[k];
+      }
+      ctx.putImageData(frame, 0, 0);
+      cv.style.opacity = (0.32 + Math.min(erosion, 1) * 0.4).toFixed(2);
+      requestAnimationFrame(loop);
+    }
+  </script>
 </body>
 </html>
