@@ -17,8 +17,7 @@
     }
 
     .player{position:relative;z-index:2;width:min(520px,88vw);padding:1.6rem 1.4rem 1.2rem;box-sizing:border-box;
-            background:rgba(0,0,0,.55);border:1px solid #2a2a2a;
-            backdrop-filter:blur(1.5px);-webkit-backdrop-filter:blur(1.5px)}
+            background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.12);text-shadow:0 0 6px #000,0 0 2px #000}
     h1{margin:0 0 .2rem;font-size:1.6rem;letter-spacing:.35em;text-align:center}
     .sub{margin:0 0 1.2rem;color:#888;font-size:.8rem;text-align:center}
 
@@ -135,6 +134,8 @@
     let N = 0, CW = 0, CH = 0, frame, buf;
     let hx, hy, px, py, vx, vy, col, seed, state;   // un grain = un pixel de l'image
     let erosion = 0, lastWheel = 0;
+    const REVERSE_AT = 10;    // au bout d'environ 10 crans d'affilée, l'île se reforme d'un coup
+    let rolled = 0, locked = false, snapUntil = 0;
 
     // bruit doux : l'érosion avance par plaques organiques au lieu d'être aléatoire
     function smoothNoise(w, h, cell){
@@ -178,8 +179,16 @@
     };
 
     function erode(force){
+      const now = performance.now();
+      if(now - lastWheel > 1200){ rolled = 0; locked = false; }  // pause assez longue : on peut recommencer
+      lastWheel = now;
+      if(locked) return;                                          // après le reverse, l'île reste stable
+      rolled += force;
+      if(rolled >= REVERSE_AT){                                   // effet reverse : tout le sable revient subitement
+        erosion = 0; locked = true; snapUntil = now + 900;
+        return;
+      }
       erosion = Math.min(1.15, erosion + 0.03 + force * 0.07);
-      lastWheel = performance.now();
     }
     window.addEventListener('wheel', e => { e.preventDefault(); erode(Math.min(Math.abs(e.deltaY), 120) / 120); }, {passive:false});
     let lastY = null;                                         // sur mobile : glisser le doigt
@@ -210,8 +219,9 @@
           if(y < 30) vy[k] += 0.04; else if(y > CH - 30) vy[k] -= 0.04;
           x += vx[k]; y += vy[k];
         } else {                                              // il revient se poser à sa place
-          const e = 0.035 + seed[k] * 0.03;
-          x += (hx[k] - x) * e + 0.25 * Math.sin(y * 0.03 + t * 2);
+          const snap = now < snapUntil;
+          const e = snap ? 0.16 + seed[k] * 0.08 : 0.035 + seed[k] * 0.03;
+          x += (hx[k] - x) * e + (snap ? 0 : 0.25 * Math.sin(y * 0.03 + t * 2));
           y += (hy[k] - y) * e;
           if(Math.abs(hx[k] - x) < 0.6 && Math.abs(hy[k] - y) < 0.6){ x = hx[k]; y = hy[k]; state[k] = 0; }
         }
@@ -220,7 +230,8 @@
         if(ix >= 0 && ix < CW && iy >= 0 && iy < CH) buf[iy * CW + ix] = col[k];
       }
       ctx.putImageData(frame, 0, 0);
-      cv.style.opacity = (0.32 + Math.min(erosion, 1) * 0.4).toFixed(2);
+      const flash = Math.max(0, (snapUntil - now) / 900) * 0.35;       // petit éclat au moment du reverse
+      cv.style.opacity = (0.32 + Math.min(erosion, 1) * 0.4 + flash).toFixed(2);
       requestAnimationFrame(loop);
     }
   </script>
