@@ -9,12 +9,8 @@
          display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none}
     a.back{position:fixed;top:14px;left:14px;color:#aaa;text-decoration:none;z-index:3}
 
-    /* l'île en fond : présente mais discrète, elle s'éclaire quand le sable s'envole */
-    #island{position:fixed;inset:0;width:100vw;height:100vh;object-fit:contain;z-index:0;
-            opacity:.32;pointer-events:none}
-    @media (max-aspect-ratio:1/1){                             /* téléphone : île plus grande, débordant un peu */
-      #island{inset:auto;left:-40vw;top:50%;width:180vw;height:auto;transform:translateY(-62%)}
-    }
+    /* l'île en fond, plein écran : le sable peut voler partout */
+    #island{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;opacity:.5;pointer-events:none}
 
     .player{position:relative;z-index:2;width:min(520px,88vw);padding:1.6rem 1.4rem 1.2rem;box-sizing:border-box;
             background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.12);text-shadow:0 0 6px #000,0 0 2px #000}
@@ -124,18 +120,18 @@
   </script>
 
   <script>
-    /* === Île en sable : la molette l'érode grain par grain, le vent emporte le sable, puis il revient === */
+    /* === Île en sable : la molette l'érode, le vent emporte le sable, et au bout de ~10 crans tout revient d'un coup.
+           Si on continue à rouler, le cycle recommence à l'infini. === */
     const cv  = document.getElementById('island');
     const ctx = cv.getContext('2d');
     const img = new Image();
     img.src = 'kalupto-island.png';
 
-    const MARGIN = 140;       // espace autour de l'île pour que le sable puisse s'envoler
-    let N = 0, CW = 0, CH = 0, frame, buf;
-    let hx, hy, px, py, vx, vy, col, seed, state;   // un grain = un pixel de l'image
-    let erosion = 0, lastWheel = 0;
-    const REVERSE_AT = 10;    // au bout d'environ 10 crans d'affilée, l'île se reforme d'un coup
-    let rolled = 0, locked = false, snapUntil = 0;
+    const CONTRAST = 1.45;    // contraste de l'île (1 = image d'origine)
+    const REVERSE_AT = 10;    // nombre de crans avant que l'île se reforme subitement
+    let N = 0, W = 0, H = 0, CW = 0, CH = 0, ox = 0, oy = 0, frame, buf;
+    let hx, hy, px, py, vx, vy, col, seed, state;   // un grain = un pixel de l'image, coordonnées relatives à l'île
+    let erosion = 0, lastWheel = 0, rolled = 0, snapUntil = 0;
 
     // bruit doux : l'érosion avance par plaques organiques au lieu d'être aléatoire
     function smoothNoise(w, h, cell){
@@ -149,89 +145,101 @@
       };
     }
 
+    // le canvas couvre tout l'écran ; l'île y est centrée (plus grande sur téléphone)
+    function fit(){
+      if(!N) return;
+      const vw = innerWidth, vh = innerHeight;
+      const S = vw < vh ? vw / (W * 0.7) : Math.min(vw / (W * 1.25), vh / (H * 1.6));
+      CW = cv.width  = Math.ceil(vw / S);
+      CH = cv.height = Math.ceil(vh / S);
+      ox = ((CW - W) / 2) | 0;
+      oy = ((CH - H) / 2 - CH * (vw < vh ? 0.12 : 0.04)) | 0;
+      frame = ctx.createImageData(CW, CH);
+      buf = new Uint32Array(frame.data.buffer);
+    }
+
     img.onload = () => {
-      const W = img.width, H = img.height;
+      W = img.width; H = img.height;
       const tmp = document.createElement('canvas');
       tmp.width = W; tmp.height = H;
       const tctx = tmp.getContext('2d');
       tctx.drawImage(img, 0, 0);
-      const src = new Uint32Array(tctx.getImageData(0, 0, W, H).data.buffer);
+      const src = tctx.getImageData(0, 0, W, H).data;
 
       const big = smoothNoise(W, H, 90), small = smoothNoise(W, H, 18);
       const idx = [];
-      for(let i = 0; i < src.length; i++) if((src[i] >>> 24) > 0) idx.push(i);
+      for(let i = 0; i < W * H; i++) if(src[i * 4 + 3] > 0) idx.push(i);
       N = idx.length;
       hx = new Float32Array(N); hy = new Float32Array(N);
       px = new Float32Array(N); py = new Float32Array(N);
       vx = new Float32Array(N); vy = new Float32Array(N);
       col = new Uint32Array(N); seed = new Float32Array(N); state = new Uint8Array(N);
+      const c = v => Math.max(0, Math.min(255, Math.round((v - 120) * CONTRAST + 120)));
       for(let k = 0; k < N; k++){
         const i = idx[k], x = i % W, y = (i / W) | 0;
-        hx[k] = px[k] = x + MARGIN; hy[k] = py[k] = y + MARGIN;
-        col[k] = src[i] | 0xff000000;
+        hx[k] = px[k] = x; hy[k] = py[k] = y;
+        col[k] = 0xff000000 | c(src[i * 4 + 2]) << 16 | c(src[i * 4 + 1]) << 8 | c(src[i * 4]);
         seed[k] = big(x, y) * 0.65 + small(x, y) * 0.25 + Math.random() * 0.10;
       }
-      CW = cv.width  = W + MARGIN * 2;
-      CH = cv.height = H + MARGIN * 2;
-      frame = ctx.createImageData(CW, CH);
-      buf = new Uint32Array(frame.data.buffer);
+      fit();
+      addEventListener('resize', fit);
       requestAnimationFrame(loop);
     };
 
     function erode(force){
       const now = performance.now();
-      if(now - lastWheel > 1200){ rolled = 0; locked = false; }  // pause assez longue : on peut recommencer
+      if(now - lastWheel > 1500) rolled = 0;                      // longue pause : on repart de zéro
       lastWheel = now;
-      if(locked) return;                                          // après le reverse, l'île reste stable
+      if(now < snapUntil - 450) return;                           // juste après le reverse, on laisse l'île se reformer
       rolled += force;
-      if(rolled >= REVERSE_AT){                                   // effet reverse : tout le sable revient subitement
-        erosion = 0; locked = true; snapUntil = now + 900;
+      if(rolled >= REVERSE_AT){                                   // reverse : tout le sable revient subitement
+        erosion = 0; rolled = 0; snapUntil = now + 900;
         return;
       }
-      erosion = Math.min(1.15, erosion + 0.03 + force * 0.07);
+      erosion = Math.min(1.15, erosion + 0.03 + force * 0.075);
     }
     window.addEventListener('wheel', e => { e.preventDefault(); erode(Math.min(Math.abs(e.deltaY), 120) / 120); }, {passive:false});
-    let lastY = null;                                         // sur mobile : glisser le doigt
+    let lastY = null;                                             // sur mobile : glisser le doigt
     window.addEventListener('touchstart', e => { lastY = e.touches[0].clientY; }, {passive:true});
     window.addEventListener('touchmove', e => {
       const y = e.touches[0].clientY;
-      if(lastY !== null) erode(Math.min(Math.abs(y - lastY), 40) / 80);
+      if(lastY !== null) erode(Math.min(Math.abs(y - lastY), 40) / 50);
       lastY = y;
     }, {passive:true});
 
     function loop(now){
       if(now - lastWheel > 500) erosion = Math.max(0, erosion - 0.0016);   // le sable revient petit à petit
-      const t = now * 0.001;
+      const t = now * 0.001, snap = now < snapUntil;
       const bob = Math.round(Math.sin(now / 900) * 3);                     // l'île flotte doucement
+      const minX = 40 - ox, maxX = CW - 40 - ox, minY = 40 - oy, maxY = CH - 40 - oy;
       buf.fill(0);
       for(let k = 0; k < N; k++){
         let x = px[k], y = py[k];
         if(state[k] === 0){
-          if(seed[k] < erosion){                              // le grain se détache
+          if(seed[k] < erosion){                                  // le grain se détache
             state[k] = 1;
-            vx[k] = 0.2 + Math.random() * 0.6;
-            vy[k] = -0.2 - Math.random() * 0.8;
+            vx[k] = (Math.random() - 0.3) * 3;
+            vy[k] = -0.5 - Math.random() * 2.5;
           }
-        } else if(seed[k] < erosion){                         // porté par le vent, en volutes
-          vx[k] = vx[k] * 0.975 + 0.007 + 0.05 * Math.sin(y * 0.021 + t * 1.3 + seed[k] * 9);
-          vy[k] = vy[k] * 0.975 - 0.004 + 0.05 * Math.cos(x * 0.017 + t * 0.9 + seed[k] * 7);
-          if(x < 30) vx[k] += 0.04; else if(x > CW - 30) vx[k] -= 0.04;   // le sable reste dans le cadre
-          if(y < 30) vy[k] += 0.04; else if(y > CH - 30) vy[k] -= 0.04;
+        } else if(seed[k] < erosion){                             // porté par le vent, en grandes volutes
+          vx[k] = vx[k] * 0.985 + 0.01 + 0.08 * Math.sin(y * 0.008 + t * 0.8 + seed[k] * 6);
+          vy[k] = vy[k] * 0.985 - 0.003 + 0.08 * Math.cos(x * 0.006 + t * 0.6 + seed[k] * 5);
+          if(x < minX) vx[k] += 0.15; else if(x > maxX) vx[k] -= 0.15;   // le sable reste à l'écran
+          if(y < minY) vy[k] += 0.15; else if(y > maxY) vy[k] -= 0.15;
           x += vx[k]; y += vy[k];
-        } else {                                              // il revient se poser à sa place
-          const snap = now < snapUntil;
-          const e = snap ? 0.16 + seed[k] * 0.08 : 0.035 + seed[k] * 0.03;
+        } else {                                                  // il revient se poser à sa place
+          const e = snap ? 0.16 + seed[k] * 0.08 : 0.03 + seed[k] * 0.03;
           x += (hx[k] - x) * e + (snap ? 0 : 0.25 * Math.sin(y * 0.03 + t * 2));
           y += (hy[k] - y) * e;
           if(Math.abs(hx[k] - x) < 0.6 && Math.abs(hy[k] - y) < 0.6){ x = hx[k]; y = hy[k]; state[k] = 0; }
         }
         px[k] = x; py[k] = y;
-        const ix = x | 0, iy = (y | 0) + bob;
+        const ix = (x | 0) + ox, iy = (y | 0) + oy + bob;
         if(ix >= 0 && ix < CW && iy >= 0 && iy < CH) buf[iy * CW + ix] = col[k];
       }
       ctx.putImageData(frame, 0, 0);
-      const flash = Math.max(0, (snapUntil - now) / 900) * 0.35;       // petit éclat au moment du reverse
-      cv.style.opacity = (0.32 + Math.min(erosion, 1) * 0.4 + flash).toFixed(2);
+      const flash = Math.max(0, (snapUntil - now) / 900) * 0.35;           // petit éclat au moment du reverse
+      cv.style.opacity = (0.5 + Math.min(erosion, 1) * 0.3 + flash).toFixed(2);
       requestAnimationFrame(loop);
     }
   </script>
